@@ -100,10 +100,10 @@ def index(request):
                 server = request.POST.get('server')
                 oc_folders = subprocess.Popen(
                     ["curl -s -X PROPFIND -u " + username + ":" + password + " '" + storage + "/" + investigation + "' | grep -oPm250 '(?<=<d:href>)[^<]+'"],
-                    stdout=subprocess.PIPE, shell=True).communicate()[0].split("\n")
+                    stdout=subprocess.PIPE, shell=True).communicate()[0].decode().split("\n")
                 inv_folders = subprocess.Popen(
                     ["curl -s -X PROPFIND -u " + username + ":" + password + "'" + storage + "/' | grep -oPm250 '(?<=<d:href>)[^<]+'"],
-                    stdout=subprocess.PIPE, shell=True).communicate()[0].split("\n")
+                    stdout=subprocess.PIPE, shell=True).communicate()[0].decode().split("\n")
             else:
                 username = request.session.get('username')
                 password = request.session.get('password')
@@ -116,7 +116,7 @@ def index(request):
                 oc_folders = ""
                 inv_folders = subprocess.Popen(
                     ["curl -s -X PROPFIND -u" + username + ":" + password + " '" + storage +
-                     "/' | grep -oPm250 '(?<=<d:href>)[^<]+'"], stdout=subprocess.PIPE, shell=True).communicate()[0].split("\n")
+                     "/' | grep -oPm250 '(?<=<d:href>)[^<]+'"], stdout=subprocess.PIPE, shell=True).communicate()[0].decode().split("\n")
             for inv in inv_folders:
                 if "/owncloud/" in request.session.get('storage'):
                     investigation_name = inv.replace('/owncloud/remote.php/webdav/', '').replace('/', '')
@@ -139,8 +139,8 @@ def index(request):
                     if "." not in study:
                         new = study
                         folders.append(new)
-            folders = filter(None, folders)
-            investigations = filter(None, investigations)
+            folders = list(filter(None, folders))
+            investigations = list(filter(None, investigations))
             try:
                 gi = GalaxyInstance(url=request.session.get('server'), email=request.session.get('galaxyemail'), password=request.session.get("galaxypass"))
             except Exception:
@@ -240,8 +240,8 @@ def triples(request):
         oc_folders = subprocess.Popen(
             ["curl -s -X PROPFIND -u" + request.session.get('username') + ":" + request.session.get('password') +
              " '" + request.session.get('storage') + "/' | grep -oPm250 '(?<=<d:href>)[^<]+'"],
-            stdout=subprocess.PIPE, shell=True).communicate()[0].split("\n")
-        if filter(None, oc_folders):
+            stdout=subprocess.PIPE, shell=True).communicate()[0].decode().split("\n")
+        if list(filter(None, oc_folders)):
             for oc in oc_folders:
                 if "/owncloud/" in request.session.get('storage'):
                     new = oc.replace('/owncloud/remote.php/webdav/', '').replace('/', '')
@@ -249,7 +249,7 @@ def triples(request):
                 else:
                     new = oc.replace('/remote.php/webdav/', '').replace('/', '')
                     folders.append(new)
-            folders = filter(None, folders)
+            folders = list(filter(None, folders))
         if request.method == 'POST':
             datalist = request.POST.get('datalist')
             metalist = request.POST.get('metalist')
@@ -265,7 +265,7 @@ def triples(request):
                     filelist = subprocess.Popen(
                         ["curl -s -X PROPFIND -u " + request.session.get('username') + ":" + request.session.get('password') +
                          " '" + request.session.get('storage') + "/" + inv + "/" + study +
-                         "' | grep -oPm100 '(?<=<d:href>)[^<]+'"], stdout=subprocess.PIPE, shell=True).communicate()[0].split("\n")
+                         "' | grep -oPm100 '(?<=<d:href>)[^<]+'"], stdout=subprocess.PIPE, shell=True).communicate()[0].decode().split("\n")
                 for f in filelist:
                     if "/owncloud/" in request.session.get('storage'):
                         new = f.replace('/owncloud/remote.php/webdav/' + inv + "/" + study, '').replace('/', '')
@@ -273,8 +273,8 @@ def triples(request):
                     else:
                         new = f.replace('/remote.php/webdav/' + inv + "/" + study, '').replace('/', '')
                         files.append(new)
-                files = filter(None, files)
-                if not filter(None, filelist):
+                files = list(filter(None, files))
+                if not list(filter(None, filelist)):
                     if request.POST.get('selected_study') is not None:
                         study = request.POST.get('selected_study')
             metadata = []
@@ -314,8 +314,8 @@ def investigation(request):
         oc_folders = subprocess.Popen(
             ["curl -s -X PROPFIND -u " + request.session.get('username') + ":" + request.session.get('password') +
              " '" + request.session.get('storage') + "/' | grep -oPm250 '(?<=<d:href>)[^<]+'"],
-            stdout=subprocess.PIPE, shell=True).communicate()[0].split("\n")
-        if filter(None, oc_folders):
+            stdout=subprocess.PIPE, shell=True).communicate()[0].decode().split("\n")
+        if list(filter(None, oc_folders)):
             folders = []
             studies = []
             oc_studies = ""
@@ -328,19 +328,19 @@ def investigation(request):
                     new = oc.replace('/remote.php/webdav/', '').replace('/', '')
                     if "." not in new:
                         folders.append(new)
-            folders = filter(None, folders)
+            folders = list(filter(None, folders))
             if request.POST.get('folder') != "" and request.POST.get('folder') is not None:
                 oc_studies = subprocess.Popen(
                     ["curl -s -X PROPFIND -u " + request.session.get('username') + ":" + request.session.get('password') +
                      " '" + request.session.get('storage') + "/" + request.POST.get('folder') +
-                     "' | grep -oPm250 '(?<=<d:href>)[^<]+'"], stdout=subprocess.PIPE, shell=True).communicate()[0].split("\n")
+                     "' | grep -oPm250 '(?<=<d:href>)[^<]+'"], stdout=subprocess.PIPE, shell=True).communicate()[0].decode().split("\n")
             else:
                 if request.POST.get('selected_folder') is not None:
                     oc_studies = subprocess.Popen(
                         ["curl -s -X PROPFIND -u " + request.session.get('username') + ":" + request.session.get('password') +
                          " '" + request.session.get('storage') + "/" + request.POST.get('selected_folder') +
                          "' | grep -oPm250 '(?<=<d:href>)[^<]+'"],
-                        stdout=subprocess.PIPE, shell=True).communicate()[0].split("\n")
+                        stdout=subprocess.PIPE, shell=True).communicate()[0].decode().split("\n")
             if oc_studies != "":
                 for s in oc_studies:
                     if request.POST.get('folder') != "" and request.POST.get('folder') is not None:
@@ -359,7 +359,7 @@ def investigation(request):
                         else:
                             new = s.replace('/remote.php/webdav/' + request.POST.get('selected_folder') + "/", '').replace('/', '')
                             studies.append(new)
-                studies = filter(None, studies)
+                studies = list(filter(None, studies))
                 inv = request.POST.get('folder')
                 return render(request, 'triples.html', context={'folders': folders, 'studies': studies, 'inv': inv})
             else:
@@ -394,7 +394,7 @@ def store(request):
                 for m in metadata:
                     mfile = m.replace('[', '').replace(']', '').replace('"', '').replace(' ', '')
                     metafile = subprocess.Popen(["curl -s -k -u" + username + ":" + password + " " + mfile[1:]],
-                                                stdout=subprocess.PIPE, shell=True).communicate()[0]
+                                                stdout=subprocess.PIPE, shell=True).communicate()[0].decode()
                     metaf = open(username + '/metafile.csv', 'w')
                     metaf.write(metafile)
                     metaf.close()
@@ -515,7 +515,7 @@ def createMetadata(request, datafile):
         filename = f.replace('[', '').replace(']', '').replace('"', '').replace(' ', '')
         cont = subprocess.Popen(
             ["curl -u " + request.session.get('username') + ":" + request.session.get('password') + " -k -s " + filename[1:]],
-            stdout=subprocess.PIPE, shell=True).communicate()[0]
+            stdout=subprocess.PIPE, shell=True).communicate()[0].decode()
     with open(request.session.get('username') + "/data.txt", "w") as datafile:
         datafile.write(cont)
     with open(datafile.name, "r") as tfile:
@@ -524,7 +524,7 @@ def createMetadata(request, datafile):
                 line = line.split('\t')
                 for x in range(0, len(line)):
                     samples.append(line[x].replace('\n', ''))
-        samples = filter(None, samples)
+        samples = list(filter(None, samples))
         tfile.seek(0)
         with open(request.session.get('username') + "/meta.txt", "w") as meta:
             for i in range(0, len(samples)):
@@ -586,7 +586,7 @@ def create_new_hist(gi, galaxyemail, galaxypass, server, workflowid, files, new_
     :return: New Galaxy history ID
     """
     if workflowid != "0":
-        if len(filter(None, files)) > 0:
+        if len(list(filter(None, files))) > 0:
             workflow = gi.workflows.show_workflow(workflowid)
             if new_hist is None or new_hist == "":
                 new_hist_name = strftime(workflow['name'] + "_%d_%b_%Y_%H:%M:%S", gmtime())
@@ -597,7 +597,7 @@ def create_new_hist(gi, galaxyemail, galaxypass, server, workflowid, files, new_
         else:
             pass
     else:
-        if len(filter(None, files)) > 0:
+        if len(list(filter(None, files))) > 0:
             if new_hist is None or new_hist == "":
                 new_hist_name = strftime("Use_Galaxy_%d_%b_%Y_%H:%M:%S", gmtime())
             else:
@@ -631,7 +631,7 @@ def make_data_files(gi, files, username, password, galaxyemail, galaxypass, cont
         nfile = str(file).split('/')
         filename = nfile[len(nfile)-1]
         with open(username + "/input_" + filename, "w") as dfile:
-            cont = subprocess.Popen(["curl -u " + username + ":" + password + " -k -s " + file], stdout=subprocess.PIPE, shell=True).communicate()[0]
+            cont = subprocess.Popen(["curl -u " + username + ":" + password + " -k -s " + file], stdout=subprocess.PIPE, shell=True).communicate()[0].decode()
             dfile.write(cont)
         dfile.close()
         with open(username + "/input_" + filename, "r") as tfile:
@@ -756,7 +756,7 @@ def make_meta_files(gi, mfiles, username, password, galaxyemail, galaxypass, con
         if meta == "No metadata":
             pass
         else:
-            mcont = subprocess.Popen(["curl -u " + username + ":" + password + " -k -s " + meta], stdout=subprocess.PIPE, shell=True).communicate()[0]
+            mcont = subprocess.Popen(["curl -u " + username + ":" + password + " -k -s " + meta], stdout=subprocess.PIPE, shell=True).communicate()[0].decode()
             with open(username + "/input_" + mfilename, "w") as metfile:
                 metfile.write(mcont)
             metfile.close()
@@ -848,7 +848,7 @@ def upload(request):
     history_id = create_new_hist(gi, request.session.get('galaxyemail'), request.session.get("galaxypass"),
                                  request.session.get('server'), workflowid, files, new_hist)
     inputs = {}
-    if len(filter(None, files)) <= 0:
+    if len(list(filter(None, files))) <= 0:
         return HttpResponseRedirect(reverse("index"))
     else:
         if onlydata == "true":
@@ -939,7 +939,7 @@ def store_results(column, datafiles, server, username, password, storage, groups
     """
     o = 0
     for name in datafiles[column]:
-        cont = subprocess.Popen(["curl -s -k " + server + datafiles[column-1][o]], stdout=subprocess.PIPE, shell=True).communicate()[0]
+        cont = subprocess.Popen(["curl -s -k " + server + datafiles[column-1][o]], stdout=subprocess.PIPE, shell=True).communicate()[0].decode()
         old_name = strftime("%d_%b_%Y_%H:%M:%S", gmtime()) + "_" + name.replace('/', '_').replace(' ', '_')
         with open(username + "/" + old_name, "w") as outputfile:
             outputfile.write(cont)
@@ -1020,7 +1020,7 @@ def ug_store_results(galaxyemail, galaxypass, server, workflowid, username, pass
     outputs = get_output(galaxyemail, galaxypass, server)
     n = 0
     for iname in outputs[1]:
-        cont = subprocess.Popen(["curl -s -k " + server + outputs[0][n]], stdout=subprocess.PIPE, shell=True).communicate()[0]
+        cont = subprocess.Popen(["curl -s -k " + server + outputs[0][n]], stdout=subprocess.PIPE, shell=True).communicate()[0].decode()
         old_name = strftime("%d_%b_%Y_%H:%M:%S", gmtime()) + "_" + iname
         with open(username + "/" + old_name, "w") as inputfile:
             inputfile.write(cont)
@@ -1114,24 +1114,24 @@ def show_results(request):
                         oc_folders = subprocess.Popen(
                             ["curl -s -X PROPFIND -u " + username + ":" + password + " '" + storage + '/' +
                              investigation + '/' + group + "' | grep -oPm250 '(?<=<d:href>)[^<]+'"],
-                            stdout=subprocess.PIPE, shell=True).communicate()[0].split("\n")
+                            stdout=subprocess.PIPE, shell=True).communicate()[0].decode().split("\n")
                     else:
                         oc_folders = subprocess.Popen(
                             ["curl -s -X PROPFIND -u " + username + ":" + password + " '" + storage + '/' + group +
-                             "' | grep -oPm250 '(?<=<d:href>)[^<]+'"], stdout=subprocess.PIPE, shell=True).communicate()[0].split("\n")
-                    oc_folders = filter(None, oc_folders)
+                             "' | grep -oPm250 '(?<=<d:href>)[^<]+'"], stdout=subprocess.PIPE, shell=True).communicate()[0].decode().split("\n")
+                    oc_folders = list(filter(None, oc_folders))
                     for folder in oc_folders:
                         if "results_" in folder:
                             if investigation != "-":
                                 result = subprocess.Popen(
                                     ["curl -s -X PROPFIND -u " + username + ":" + password + " '" + storage + '/' + investigation +
                                      '/' + group + '/' + 'results_' + results[0] + "' | grep -oPm250 '(?<=<d:href>)[^<]+'"],
-                                    stdout=subprocess.PIPE, shell=True).communicate()[0].split("\n")
+                                    stdout=subprocess.PIPE, shell=True).communicate()[0].decode().split("\n")
                             else:
                                 result = subprocess.Popen(
                                     ["curl -s -X PROPFIND -u " + username + ":" + password + " '" + storage + '/' + group + '/' +
                                      'results_' + results[0] + "' | grep -oPm250 '(?<=<d:href>)[^<]+'"],
-                                    stdout=subprocess.PIPE, shell=True).communicate()[0].split("\n")
+                                    stdout=subprocess.PIPE, shell=True).communicate()[0].decode().split("\n")
             for r in result:
                 if ".ga" in r:
                     wf = True
@@ -1139,7 +1139,7 @@ def show_results(request):
                     cont = subprocess.Popen(
                         ["curl -s -k -u " + username + ":" + password + " " + storage + "/" + nres[len(nres) - 4] + "/" +
                          nres[len(nres) - 3] + "/" + nres[len(nres) - 2] + "/" + nres[len(nres) - 1]],
-                        stdout=subprocess.PIPE, shell=True).communicate()[0]
+                        stdout=subprocess.PIPE, shell=True).communicate()[0].decode()
                     with open(username + "/" + nres[len(nres)-1], "w") as ga:
                         ga.write(cont)
                     workflow = read_workflow(ga.name)
@@ -1148,7 +1148,7 @@ def show_results(request):
                          username.replace('@', '') + "> { VALUES (?workflow) {(\"" + ga.name + "\")}{ ?s <http://127.0.0.1:3030/ds/data?graph=" +
                          username.replace('@', '') + "#workflowid> ?workflowid . ?s <http://127.0.0.1:3030/ds/data?graph=" + username.replace('@', '') +
                          "#workflow> ?workflow . } } ORDER BY (?workflowid)' -H 'Accept: application/sparql-results+json,*/*;q=0.9'"],
-                        stdout=subprocess.PIPE, shell=True).communicate()[0]
+                        stdout=subprocess.PIPE, shell=True).communicate()[0].decode()
                     wid = json.dumps(workflowid)
                     wfid = json.loads(workflowid)
                     wid = json.dumps(wfid["results"]["bindings"][0]["workflowid"]["value"])
@@ -1167,8 +1167,8 @@ def show_results(request):
                         resid = nres[len(nres)-4] + "/" + nres[len(nres)-3] + "/" + nres[len(nres)-2]
                     except IndexError:
                         pass
-                out = filter(None, out)
-                inputs = filter(None, inputs)
+                out = list(filter(None, out))
+                inputs = list(filter(None, inputs))
             return render(request, 'results.html', context={'inputs': inputs, 'outputs': out, 'workflow': workflow,
                             'storage': storage, 'resultid': resid, 'workflowid': wid})
         else:
@@ -1290,7 +1290,7 @@ def store_history(request):
                 input_ids.append(iug)
             count = 0
             for u in url:
-                cont = subprocess.Popen(["curl -s -k " + u], stdout=subprocess.PIPE, shell=True).communicate()[0]
+                cont = subprocess.Popen(["curl -s -k " + u], stdout=subprocess.PIPE, shell=True).communicate()[0].decode()
                 old_name = strftime("%d_%b_%Y_%H:%M:%S", gmtime()) + "_" + names[count].replace('/', '_').replace(' ', '_')
                 with open(username + "/" + old_name, "w") as newfile:
                     newfile.write(cont)
@@ -1368,7 +1368,7 @@ def rerun_analysis(request):
         filename = u.replace("[", "").replace("]", "").replace(" ", "").replace('"', '')
         cont = subprocess.Popen(
             ["curl -s -u " + request.session.get('username') + ":" + request.session.get('password') + " " +
-             request.session.get('storage') + "/" + filename], stdout=subprocess.PIPE, shell=True).communicate()[0]
+             request.session.get('storage') + "/" + filename], stdout=subprocess.PIPE, shell=True).communicate()[0].decode()
         file = filename.split('/')
         with open(request.session.get('username') + "/" + file[len(file)-1], "w") as infile:
             infile.write(cont)
@@ -1393,7 +1393,7 @@ def rerun_analysis(request):
             break
     oc_folders = subprocess.Popen(
         ["curl -s -X PROPFIND -u " + request.session.get('username') + ":" + request.session.get('password') + " '" + request.session.get('storage') +
-         "/" + resultid + "' | grep -oPm250 '(?<=<d:href>)[^<]+'"], stdout=subprocess.PIPE, shell=True).communicate()[0].split("\n")
+         "/" + resultid + "' | grep -oPm250 '(?<=<d:href>)[^<]+'"], stdout=subprocess.PIPE, shell=True).communicate()[0].decode().split("\n")
     for f in oc_folders:
         if ".ga" in f:
             if "/owncloud/" in request.session.get('storage'):
@@ -1401,7 +1401,7 @@ def rerun_analysis(request):
             else:
                 ga = f.replace('/remote.php/webdav/', '')
             gacont = subprocess.Popen(["curl -s -u " + request.session.get('username') + ":" + request.session.get('password') + " " +
-                request.session.get('storage') + "/" + ga], stdout=subprocess.PIPE, shell=True).communicate()[0]
+                request.session.get('storage') + "/" + ga], stdout=subprocess.PIPE, shell=True).communicate()[0].decode()
             ga = ga.split('/')
             with open(request.session.get('username') + "/" + ga[len(ga)-1], "w") as gafile:
                 gafile.write(gacont)
@@ -1456,9 +1456,9 @@ def onto(disgenet, edam):
          "SERVICE+%3Chttp%3A%2F%2Frdf.disgenet.org%2Fsparql%2F%3E+%7B%0A++++" +
          "%3Fdisease+rdf%3Atype+ncit%3AC7057+%3B%0A++++%09dcterms%3Atitle+%22" + disgenet +
          "%22%40en+.%0A%7D%0A%7D' -H 'Accept: application/sparql-results+json,*/*;q=0.9'"],
-        stdout=subprocess.PIPE, shell=True).communicate()[0]
+        stdout=subprocess.PIPE, shell=True).communicate()[0].decode()
     edam_id = subprocess.Popen(["curl -s 'http://www.ebi.ac.uk/ols/api/search?q=" + edam + "&ontology=edam' 'Accept: application/json'"],
-                               stdout=subprocess.PIPE, shell=True).communicate()[0]
+                               stdout=subprocess.PIPE, shell=True).communicate()[0].decode()
     try:
         jdisease = json.loads(disid)
         umllist = []
