@@ -393,7 +393,7 @@ def store(request):
             if metadata is not None:
                 for m in metadata:
                     mfile = m.replace('[', '').replace(']', '').replace('"', '').replace(' ', '')
-                    metafile = subprocess.Popen(["curl -s -k -u" + username + ":" + password + " " + mfile[1:]],
+                    metafile = subprocess.Popen(["curl -s -k -u " + username + ":" + password + " " + mfile],
                                                 stdout=subprocess.PIPE, shell=True).communicate()[0].decode()
                     metaf = open(username + '/metafile.csv', 'w')
                     metaf.write(metafile)
@@ -404,17 +404,16 @@ def store(request):
                         filemeta = "meta.txt"
                         call(["curl -s -k -u " + username + ":" + password + " -T " + '\'' + "meta.txt" + '\'' +
                               " " + storage + "/" + inv + "/" + study + "/meta.txt"], shell=True)
-            with open(username + "/" + filemeta, 'rb') as csvfile:
+            with open(username + "/" + filemeta, 'rt') as csvfile:
                 count = 0
                 reader = csv.DictReader(csvfile)
                 cnt = 0
                 for row in reader:
                     for p in pid.split(','):
-                        data = p.replace('[', '').replace(']', '').replace("'", "").replace('"', '').replace(' ', '')[1:]
+                        data = p.replace('[', '').replace(']', '').replace("'", "").replace('"', '').replace(' ', '')
                         call(["curl http://127.0.0.1:3030/ds/update -X POST --data 'update=INSERT DATA { GRAPH <http://127.0.0.1:3030/ds/data/" +
                               username.replace('@', '') + "> { <http://127.0.0.1:3030/" + study + "_" + str(cnt) + "> <http://127.0.0.1:3030/ds/data?graph=" +
                               username.replace('@', '') + "#pid> \"" + data + "\" } }' -H 'Accept: text/plain,*/*;q=0.9'"], shell=True)
-
                     call(["curl http://127.0.0.1:3030/ds/update -X POST --data 'update=INSERT DATA { GRAPH <http://127.0.0.1:3030/ds/data/" +
                           username.replace('@', '') + "> { <http://127.0.0.1:3030/" + study + "_" + str(cnt) + "> <http://127.0.0.1:3030/ds/data?graph=" +
                           username.replace('@', '') + "#investigation_id> \"" + inv + "\" } }' -H 'Accept: text/plain,*/*;q=0.9'"], shell=True)
@@ -440,7 +439,7 @@ def store(request):
                             mfile = m.replace('[', '').replace(']', '').replace('"', '').replace("'", "").replace(' ', '')
                             call(["curl http://127.0.0.1:3030/ds/update -X POST --data 'update=INSERT DATA { GRAPH <http://127.0.0.1:3030/ds/data/" +
                                   username.replace('@', '') + "> { <http://127.0.0.1:3030/" + study + "_" + str(cnt) +
-                                  "> <http://127.0.0.1:3030/ds/data?graph=" + username.replace('@', '') + "#meta> \"" + mfile[1:] +
+                                  "> <http://127.0.0.1:3030/ds/data?graph=" + username.replace('@', '') + "#meta> \"" + mfile +
                                   "\" } }' -H 'Accept: text/plain,*/*;q=0.9'"], shell=True)
                     headers = []
                     for (k, v) in row.items():
@@ -1091,6 +1090,7 @@ def show_results(request):
     out = []
     result = ""
     workflow = []
+    resid = 0
     wf = False
     if request.method == 'POST':
         request.session['stored_results'] = request.POST
@@ -1170,7 +1170,7 @@ def show_results(request):
                 out = list(filter(None, out))
                 inputs = list(filter(None, inputs))
             return render(request, 'results.html', context={'inputs': inputs, 'outputs': out, 'workflow': workflow,
-                            'storage': storage, 'resultid': resid, 'workflowid': wid})
+                                                            'storage': storage, 'resultid': resid, 'workflowid': wid})
         else:
             return HttpResponseRedirect(reverse('index'))
 
