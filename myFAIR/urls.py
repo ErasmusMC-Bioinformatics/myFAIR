@@ -18,6 +18,7 @@ from . import views
 from django.conf.urls import url
 from django.conf.urls.static import static
 from django.conf import settings
+from django.views.generic import TemplateView
 
 urlpatterns = [
     url(r'^$', views.index, name="index"),
@@ -28,7 +29,8 @@ urlpatterns = [
     url(r'^store', views.store, name="store"),
     url(r'^samples', views.samples, name="samples"),
     url(r'^modify', views.modify, name="modify"),
-    url(r'^delete', views.delete, name="delete"),
+    url(r'^delete', TemplateView.as_view(template_name='modify.html'), 
+    name="delete"),
     url(r'^results', views.show_results, name="results"),
     url(r'^rerun', views.rerun_analysis, name="rerun"),
     url(r'^history', views.store_history, name="history"),

@@ -1,6 +1,7 @@
 /*
 ** Creating the interface to make queries and show the data.
-** It also sends some important data to views.py to be able to upload data to Galaxy.
+** It also sends some important data to views.py to be able to 
+** upload data to Galaxy.
 */
 var count = 0;
 var SPARQL_ENDPOINT = 'http://localhost:3030/ds/query?query='
@@ -14,19 +15,28 @@ $(document).ready(function () {
     $("#results").addClass('hidden');
     $("#errorPanel").addClass('hidden');
     $("#infoPanel").addClass('hidden');
-    var sampleid = "SELECT DISTINCT ?value FROM <http://127.0.0.1:3030/ds/data/"+USER+"> WHERE { ?sample <http://127.0.0.1:3030/ds/data?graph="+USER+"#sample_id> ?value }" +
-                  "ORDER BY(?value)"
-    var study = "SELECT DISTINCT ?value FROM <http://127.0.0.1:3030/ds/data/"+USER+"> WHERE { ?s <http://127.0.0.1:3030/ds/data?graph="+USER+"#group_id> ?value }" +
-               "ORDER BY (?value)"
-    var disease = "SELECT DISTINCT ?value FROM <http://127.0.0.1:3030/ds/data/"+USER+"> WHERE { ?s <http://127.0.0.1:3030/ds/data?graph="+USER+"#disease> ?value }" +
-                "ORDER BY (?value)"
-    var investigation = "SELECT DISTINCT ?value FROM <http://127.0.0.1:3030/ds/data/"+USER+"> WHERE { ?s <http://127.0.0.1:3030/ds/data?graph="+USER+"#investigation_id> ?value }" +
-                "ORDER BY (?value)"
+    var sampleid = "SELECT DISTINCT ?value FROM " +
+        "<http://127.0.0.1:3030/ds/data/" + USER + "> WHERE " +
+        "{ ?sample <http://127.0.0.1:3030/ds/data?graph=" + USER +
+        "#sample_id> ?value }" + "ORDER BY(?value)"
+    var study = "SELECT DISTINCT ?value FROM " +
+        "<http://127.0.0.1:3030/ds/data/" + USER + "> WHERE " +
+        "{ ?s <http://127.0.0.1:3030/ds/data?graph=" + USER +
+        "#group_id> ?value }" + "ORDER BY (?value)"
+    var disease = "SELECT DISTINCT ?value FROM " +
+        "<http://127.0.0.1:3030/ds/data/" + USER + "> WHERE " +
+        "{ ?s <http://127.0.0.1:3030/ds/data?graph=" + USER +
+        "#disease> ?value }" + "ORDER BY (?value)"
+    var investigation = "SELECT DISTINCT ?value FROM " +
+        "<http://127.0.0.1:3030/ds/data/" + USER + "> WHERE " +
+        "{ ?s <http://127.0.0.1:3030/ds/data?graph=" + USER +
+        "#investigation_id> ?value }" + "ORDER BY (?value)"
     fillList = [study, investigation, sampleid, disease]
     resultList = [study, investigation]
-    for(fl in fillList) {
-        var service = encodeURI(SPARQL_ENDPOINT + fillList[fl] + '&format=json').
-                replace(/#/g, '%23').replace('+', '%2B');
+    for (fl in fillList) {
+        var service = encodeURI(
+            SPARQL_ENDPOINT + fillList[fl] + '&format=json').replace(
+                /#/g, '%23').replace('+', '%2B');
         $.ajax({
             url: service, dataType: 'jsonp', success: function (result) {
                 var inputOption = document.getElementById('search');
@@ -52,8 +62,9 @@ $(document).ready(function () {
         });
     }
     for (rl in resultList) {
-        var service = encodeURI(SPARQL_ENDPOINT + resultList[rl] + '&format=json').
-                replace(/#/g, '%23').replace('+', '%2B');
+        var service = encodeURI(
+            SPARQL_ENDPOINT + resultList[rl] + '&format=json').replace(
+                /#/g, '%23').replace('+', '%2B');
         $.ajax({
             url: service, dataType: 'jsonp', success: function (result) {
                 var inputOption = document.getElementById('search-result');
@@ -79,7 +90,8 @@ $(document).ready(function () {
         });
     }
 });
-// Query the datafiles based on sample name, investigation name, study name or disease
+// Query the datafiles based on sample name, investigation name, 
+// study name or disease
 // Query the results based on investigation or study name
 function sparqlQuery() {
     $("#errorPanel").addClass('hidden');
@@ -89,37 +101,56 @@ function sparqlQuery() {
     var SEARCH = document.getElementById('search').value;
     var RSEARCH = document.getElementById('search-result').value;
     if (SEARCH != '') {
-        var query = "SELECT DISTINCT ?pid ?meta ?investigation ?study ?sex ?disease ?disease_iri ?method_iri ?sample FROM <http://127.0.0.1:3030/ds/data/"+USER+">" +
-                "WHERE {" +
-                    "?s <http://127.0.0.1:3030/ds/data?graph="+USER+"#pid> ?pid ." +
-                    "?s <http://127.0.0.1:3030/ds/data?graph="+USER+"#meta> ?meta ." +
-                    "?s <http://127.0.0.1:3030/ds/data?graph="+USER+"#investigation_id> ?investigation ." +
-                    "?s <http://127.0.0.1:3030/ds/data?graph="+USER+"#group_id> ?study ." +
-                    "?s <http://127.0.0.1:3030/ds/data?graph="+USER+"#sex> ?sex ." +
-                    "?s <http://127.0.0.1:3030/ds/data?graph="+USER+"#sample_id> ?sample ." +
-                    "?s <http://127.0.0.1:3030/ds/data?graph="+USER+"#disease> ?disease ." +
-                    "?s <http://127.0.0.1:3030/ds/data?graph="+USER+"#disgenet_iri> ?disease_iri ." +
-                    "?s <http://127.0.0.1:3030/ds/data?graph="+USER+"#edam_iri> ?method_iri ." +
-                    "FILTER (CONTAINS(?sample, '" + SEARCH + "') || regex(?disease, '" + SEARCH + "', 'i') || regex(?study, '" + SEARCH + "', 'i') || " +
-                    "regex(?investigation, '" + SEARCH + "', 'i'))" +
-                    "}" +
-                "ORDER BY (?sample)";
+        var query = "SELECT DISTINCT ?pid ?meta ?investigation ?study ?sex " +
+            "?disease ?disease_iri ?method_iri ?sample FROM " +
+            "<http://127.0.0.1:3030/ds/data/" + USER + ">" +
+            "WHERE {" +
+            "?s <http://127.0.0.1:3030/ds/data?graph=" + USER +
+            "#pid> ?pid ." +
+            "?s <http://127.0.0.1:3030/ds/data?graph=" + USER +
+            "#meta> ?meta ." +
+            "?s <http://127.0.0.1:3030/ds/data?graph=" + USER +
+            "#investigation_id> ?investigation ." +
+            "?s <http://127.0.0.1:3030/ds/data?graph=" + USER +
+            "#group_id> ?study ." +
+            "?s <http://127.0.0.1:3030/ds/data?graph=" + USER +
+            "#sex> ?sex ." +
+            "?s <http://127.0.0.1:3030/ds/data?graph=" + USER +
+            "#sample_id> ?sample ." +
+            "?s <http://127.0.0.1:3030/ds/data?graph=" + USER +
+            "#disease> ?disease ." +
+            "?s <http://127.0.0.1:3030/ds/data?graph=" + USER +
+            "#disgenet_iri> ?disease_iri ." +
+            "?s <http://127.0.0.1:3030/ds/data?graph=" + USER +
+            "#edam_iri> ?method_iri ." +
+            "FILTER (CONTAINS(?sample, '" + SEARCH +
+            "') || regex(?disease, '" + SEARCH +
+            "', 'i') || regex(?study, '" + SEARCH +
+            "', 'i') || regex(?investigation, '" + SEARCH +
+            "', 'i'))} ORDER BY (?sample)";
     }
     if (RSEARCH != '') {
-        var query = "SELECT DISTINCT (?s as ?id) ?resultid ?investigation ?study ?date ?workflow FROM <http://127.0.0.1:3030/ds/data/"+USER+"> " +
+        var query = "SELECT DISTINCT (?s as ?id) ?resultid ?investigation " +
+            "?study ?date ?workflow FROM " +
+            "<http://127.0.0.1:3030/ds/data/" + USER + ">" +
             "WHERE {" +
-                    "?s <http://127.0.0.1:3030/ds/data?graph="+USER+"#results_id> ?resultid ." +
-                    "?s <http://127.0.0.1:3030/ds/data?graph="+USER+"#group_id> ?study ." +
-                    "?s <http://127.0.0.1:3030/ds/data?graph="+USER+"#investigation_id> ?investigation ." +
-                    "?s <http://127.0.0.1:3030/ds/data?graph="+USER+"#workflow> ?workflow ." +
-                    "?s <http://127.0.0.1:3030/ds/data?graph="+USER+"#date> ?date ." +
-                    "FILTER (regex(?study, '" + RSEARCH + "', 'i') || regex(?investigation, '" + RSEARCH + "', 'i'))" +
-                    "}" +
-            "ORDER BY DESC(?date)";
+            "?s <http://127.0.0.1:3030/ds/data?graph=" + USER +
+            "#results_id> ?resultid ." +
+            "?s <http://127.0.0.1:3030/ds/data?graph=" + USER +
+            "#group_id> ?study ." +
+            "?s <http://127.0.0.1:3030/ds/data?graph=" + USER +
+            "#investigation_id> ?investigation ." +
+            "?s <http://127.0.0.1:3030/ds/data?graph=" + USER +
+            "#workflow> ?workflow ." +
+            "?s <http://127.0.0.1:3030/ds/data?graph=" + USER +
+            "#date> ?date ." + "FILTER (regex(?study, '" + RSEARCH +
+            "', 'i') || regex(?investigation, '" + RSEARCH +
+            "', 'i'))} ORDER BY DESC(?date)";
     }
     var isValueMissing = false;
     if (SEARCH === '' && RSEARCH === '') {
-        var errorMessage = "<strong>Input error : </strong>Please enter a value "
+        var errorMessage = ("<strong>Input error : " +
+            "</strong>Please enter a value ")
         isValueMissing = true;
         $("#errorPanel").html(errorMessage);
         $("#errorPanel").removeClass('hidden');
@@ -130,7 +161,8 @@ function sparqlQuery() {
         console.log("SPARQL query \n" + query);
         var service = encodeURI(SPARQL_ENDPOINT + query + '&format=json').
             replace(/#/g, '%23').replace('+', '%2B');
-        $("#infoPanel").html('<strong>Info :</strong> Some queries take more time to process,' +
+        $("#infoPanel").html(
+            '<strong>Info :</strong> Some queries take more time to process,' +
             'thanks for being patient');
         $.ajax({
             url: service, dataType: 'jsonp', success: function (result) {
@@ -140,7 +172,8 @@ function sparqlQuery() {
                 fillTable(result);
             },
             error: function (xhr) {
-                alert("An error occured: " + xhr.status + " " + xhr.statusText);
+                alert("An error occured: " + xhr.status + " " +
+                    xhr.statusText);
             }
         });
     }
@@ -160,15 +193,17 @@ function fillTable(result) {
             table += '<th><a>' + entry + '</a></th>'
         }
     });
-//    table += '<th>groups</th>'
+    //    table += '<th>groups</th>'
     table += '</tr></thead><tbody>'
     var rownr = 1;
     result.results.bindings.forEach(function (value) {
         table += '<tr>'
-        if(hasCol) {
-            table+='<td><button id="index_buttons" onclick="getoutput()">Show results</button></td>';
+        if (hasCol) {
+            table += '<td><button id="index_buttons" onclick="getoutput()">' +
+                'Show results</button></td>';
         }
-        table += '<td><input type="checkbox" name="select" id="'+ rownr +'" value="'+ rownr +'"><label for="'+ rownr +'"></label></td>';
+        table += '<td><input type="checkbox" name="select" id="' + rownr +
+            '" value="' + rownr + '"><label for="' + rownr + '"></label></td>';
         rownr = rownr + 1;
         result.head.vars.forEach(function (head) {
             if (head.indexOf("URI") === -1 && value[head] !== undefined) {
@@ -188,26 +223,34 @@ function fillTable(result) {
                     }
                     else {
                         table += '<td><a target="_blank" href="' + resourceURI
-                            + '" resource="' + resourceURI + '"> <span property="rdfs:label">'
+                            + '" resource="' + resourceURI +
+                            '"> <span property="rdfs:label">'
                             + displayName + '</span></a></td>';
                     }
                 }
                 else {
-                    if (displayName.indexOf("http://") >= 0 || displayName.indexOf("https://") >= 0) {
-                        table += '<td><span><a target="_blank" href="' + displayName + '">' + displayName + '</a></span></td>';
+                    if (
+                        displayName.indexOf("http://") >= 0 ||
+                        displayName.indexOf("https://") >= 0
+                    ) {
+                        table += '<td><span><a target="_blank" href="' +
+                            displayName + '">' + displayName +
+                            '</a></span></td>';
                     } else {
                         table += '<td><span>' + displayName + '</span></td>';
                     }
                 }
                 if (head === "sample" && rownr >= 2) {
-                    table +='<td>'+
-                            '<input type="checkbox" name="samplea" id="'+ rownr +'A" value="' + displayName + '">' +
-                            '<label for="'+ rownr +'A">&nbsp;A</label>' +
-                            '</td>' +
-                            '<td>' +
-                            '<input type="checkbox" name="sampleb" id="'+ rownr +'B" value="' + displayName +'">' +
-                            '<label for="'+ rownr +'B">&nbsp;B</label>' +
-                            '</td>';
+                    table += '<td>' +
+                        '<input type="checkbox" name="samplea" id="' +
+                        rownr + 'A" value="' + displayName + '">' +
+                        '<label for="' + rownr + 'A">&nbsp;A</label>' +
+                        '</td>' +
+                        '<td>' +
+                        '<input type="checkbox" name="sampleb" id="' +
+                        rownr + 'B" value="' + displayName + '">' +
+                        '<label for="' + rownr + 'B">&nbsp;B</label>' +
+                        '</td>';
                 }
             }
         });
@@ -226,12 +269,12 @@ function fillTable(result) {
     // Check if column exists
     function hasColumn(tblSel, content) {
         var ths = document.querySelectorAll(tblSel + ' th');
-        return Array.prototype.some.call(ths, function(el) {
+        return Array.prototype.some.call(ths, function (el) {
             return el.textContent === content;
         });
     };
     var hasCol = hasColumn("#results_table thead", "workflow");
-    if(hasCol) {
+    if (hasCol) {
         document.getElementById('show_results').style.display = "block";
         $('#galaxy').html(
             '<p>Select a result and press the Show results button</p>'
@@ -239,43 +282,52 @@ function fillTable(result) {
     } else {
         $('#galaxy').html(
             '<select name="filetype" id="filetype" class="select-option">' +
-                '<optgroup label="File Type:" style="color: #21317F;">' +
-                '<option value="vcf">vcf</option>' +
-                '<option value="tabular">tabular</option>' +
-                '<option value="fasta">fasta</option>' +
-                '<option value="fastq">fastq</option>' +
-                '<option value="auto">auto</option>' +
-                '</optgroup>' +
+            '<optgroup label="File Type:" style="color: #21317F;">' +
+            '<option value="vcf">vcf</option>' +
+            '<option value="tabular">tabular</option>' +
+            '<option value="fasta">fasta</option>' +
+            '<option value="fastq">fastq</option>' +
+            '<option value="auto">auto</option>' +
+            '</optgroup>' +
             '</select>' +
             '&nbsp' +
             '<select name="dbkey" id="dbkey" class="select-option">' +
-                '<optgroup label="Database" style="color: #21317F;">' +
-                '<option value="hg19">HG19</option>' +
-                '<option value="hg18">HG18</option>' +
-                '<option value="?">?</option>' +
-                '</optgroup>' +
+            '<optgroup label="Database" style="color: #21317F;">' +
+            '<option value="hg19">HG19</option>' +
+            '<option value="hg18">HG18</option>' +
+            '<option value="?">?</option>' +
+            '</optgroup>' +
             '</select>' +
             '&nbsp' +
-            '<input type="text" id="historyname" name="historyname" style="width:25%;" placeholder="Enter new history name."/>' +
+            '<input type="text" id="historyname" name="historyname" ' +
+            'style="width:25%;" placeholder="Enter new history name."/>' +
             '&nbsp' +
-            '<button id="index_buttons" onclick="postdata(\'group\')"><span class="glyphicon glyphicon-forward" aria-hidden="true"></span> send to galaxy <span class="glyphicon glyphicon-backward" aria-hidden="true"></span></button>'
+            '<button id="index_buttons" onclick="postdata(\'group\')">' +
+            '<span class="glyphicon glyphicon-forward" aria-hidden="true">' +
+            '</span> send to galaxy ' +
+            '<span class="glyphicon glyphicon-backward" aria-hidden="true">' +
+            '</span></button>'
         );
     }
     // Sort table when clicking on the header
-    $('th').click(function(){
+    $('th').click(function () {
         var table = $(this).parents('table').eq(0)
-        var rows = table.find('tr:gt(0)').toArray().sort(comparer($(this).index()))
+        var rows = table.find(
+            'tr:gt(0)').toArray().sort(comparer($(this).index()))
         this.desc = !this.desc
-        if (!this.desc){rows = rows.reverse()}
-        for (var i = 0; i < rows.length; i++){table.append(rows[i])}
+        if (!this.desc) { rows = rows.reverse() }
+        for (var i = 0; i < rows.length; i++) { table.append(rows[i]) }
     })
     function comparer(index) {
-        return function(a, b) {
+        return function (a, b) {
             var valA = getCellValue(a, index), valB = getCellValue(b, index)
-            return $.isNumeric(valA) && $.isNumeric(valB) ? valA - valB : valA.localeCompare(valB)
+            return ($.isNumeric(valA) &&
+                $.isNumeric(valB) ? valA - valB : valA.localeCompare(valB))
         }
     }
-    function getCellValue(row, index){ return $(row).children('td').eq(index).html() }
+    function getCellValue(row, index) {
+        return $(row).children('td').eq(index).html()
+    }
     if (!hasResult) {
         $("#noResultPanel").removeClass('hidden');
         $("#results_table").addClass('hidden');
@@ -289,10 +341,10 @@ function postdata(g) {
     var selectout = new Array;
     var onlydata = "";
     var col = "";
-    if(document.getElementById('onlydata').checked) {
+    if (document.getElementById('onlydata').checked) {
         var onlydata = document.getElementById('onlydata').value;
     }
-    if(document.getElementById('col').checked) {
+    if (document.getElementById('col').checked) {
         var col = document.getElementById('col').value;
     }
     var dat = [];
@@ -302,14 +354,14 @@ function postdata(g) {
     var samples = new Array;
     var samplesb = new Array;
     // Add sample to list if checkbox is checked
-    $("input:checkbox[name=samplea]:checked").each(function(){
+    $("input:checkbox[name=samplea]:checked").each(function () {
         samples.push($(this).val());
     });
-    $("input:checkbox[name=sampleb]:checked").each(function(){
+    $("input:checkbox[name=sampleb]:checked").each(function () {
         samplesb.push($(this).val());
     });
     // Add row to list if checkbox is checked
-    $("input:checkbox[name=select]:checked").each(function(){
+    $("input:checkbox[name=select]:checked").each(function () {
         selected.push($(this).val());
     });
     for (s = 0; s < selected.length; s++) {
@@ -333,14 +385,18 @@ function postdata(g) {
     $.ajax({
         type: 'POST',
         url: "upload/",
-        data: { 'data_id': data_id, 'token': token, 'workflowid': workflowid, 
-        'filetype': filetype, 'dbkey': dbkey, 'meta_id': meta_id, 
-        'selected': jsonSelected, 'meta': jsonMeta, 'onlydata': onlydata, 'col': col,
-        'samples': jsonSamples, 'samplesb': jsonSamplesb, 'historyname': historyname, 
-        'group': jsonGroup, 'investigation': jsonInvestigation},
+        data: {
+            'data_id': data_id, 'token': token, 'workflowid': workflowid,
+            'filetype': filetype, 'dbkey': dbkey, 'meta_id': meta_id,
+            'selected': jsonSelected, 'meta': jsonMeta, 'onlydata': onlydata,
+            'col': col, 'samples': jsonSamples, 'samplesb': jsonSamplesb,
+            'historyname': historyname, 'group': jsonGroup,
+            'investigation': jsonInvestigation
+        },
         success: function (data) {
-            if(dat.length <= 0) {
-                document.getElementById('errormessage').innerHTML = "No file selected, please try again."
+            if (dat.length <= 0) {
+                document.getElementById('errormessage').innerHTML =
+                    "No file selected, please try again."
                 document.getElementById('error').style.display = "block";
                 document.getElementById('finished').style.display = "none";
                 document.getElementById('loading').style.display = "none";
@@ -365,7 +421,7 @@ function getoutput() {
     var group = [];
     var investigations = [];
     var resultid = new Array;
-    $("input:checkbox[name=select]:checked").each(function(){
+    $("input:checkbox[name=select]:checked").each(function () {
         selected.push($(this).val());
     });
     for (s = 0; s < selected.length; s++) {
@@ -379,7 +435,10 @@ function getoutput() {
     $.ajax({
         type: 'POST',
         url: "results",
-        data: { 'group': jsonGroup, 'resultid': jsonResultid, 'investigations': jsonInvestigation},
+        data: {
+            'group': jsonGroup, 'resultid': jsonResultid,
+            'investigations': jsonInvestigation
+        },
         success: function (data) {
             window.location.href = "results";
         },
@@ -389,8 +448,10 @@ function getoutput() {
     });
 }
 // Refresh the page
-function refresh () {
-    window.location.reload();
+function refresh() {
+    // window.location.reload();
+    // window.parent.window.location.reload();
+    window.location.href = "";
 }
 // Loop through the results_table and get the pid (first column)
 function checkData(g) {
@@ -398,12 +459,14 @@ function checkData(g) {
     var i = 0, j = 0;
     var str = "";
     for (i = 0; i < n1; i++) {
-        var groups = document.getElementById('results_table').rows[i].cells.item(3).innerText;
+        var groups = document.getElementById(
+            'results_table').rows[i].cells.item(3).innerText;
         if (groups == g) {
             var n = i;
             var n2 = document.getElementById('results_table').rows[i].length;
             for (i = 1; i < n1; i++) {
-                var x = document.getElementById('results_table').rows[n].cells.item(j + 1).innerText;
+                var x = document.getElementById(
+                    'results_table').rows[n].cells.item(j + 1).innerText;
             }
         }
         else {
@@ -419,12 +482,14 @@ function checkMeta(g) {
     var i = 0, j = 0;
     var str = "";
     for (i = 0; i < n1; i++) {
-        var groups = document.getElementById('results_table').rows[i].cells.item(3).innerText;
+        var groups = document.getElementById(
+            'results_table').rows[i].cells.item(3).innerText;
         if (groups == g) {
             var n = i;
             var n2 = document.getElementById('results_table').rows[i].length;
             for (i = 1; i < n1; i++) {
-                var x = document.getElementById('results_table').rows[n].cells.item(j + 2).innerText;
+                var x = document.getElementById(
+                    'results_table').rows[n].cells.item(j + 2).innerText;
             }
         }
         else {
@@ -440,10 +505,14 @@ function getrow(r) {
     var str2 = "";
     var str3 = "";
     var str4 = "";
-    var x = document.getElementById('results_table').rows[r].cells.item(1).innerText;
-    var y = document.getElementById('results_table').rows[r].cells.item(2).innerText;
-    var z = document.getElementById('results_table').rows[r].cells.item(4).innerText;
-    var i = document.getElementById('results_table').rows[r].cells.item(3).innerText;
+    var x = document.getElementById(
+        'results_table').rows[r].cells.item(1).innerText;
+    var y = document.getElementById(
+        'results_table').rows[r].cells.item(2).innerText;
+    var z = document.getElementById(
+        'results_table').rows[r].cells.item(4).innerText;
+    var i = document.getElementById(
+        'results_table').rows[r].cells.item(3).innerText;
     str = str + x;
     str2 = str2 + y;
     str3 = str3 + z;
@@ -457,21 +526,28 @@ function rerun_analysis() {
     inputs = inputs.split(',');
     resultid = document.getElementById("title").innerText;
     var urls = new Array;
-    for(i=0; i<=(inputs.length-1); i++) {
-        urls.push(resultid.replace(" ", "") + "/" + inputs[i].replace(" ", "").replace("\n", "").replace("'", "").replace("[", "").replace("]", "").replace("'", ""))
+    for (i = 0; i <= (inputs.length - 1); i++) {
+        urls.push(
+            resultid.replace(" ", "") + "/" +
+            inputs[i].replace(" ", "").replace("\n", "").replace(
+                "'", "").replace("[", "").replace("]", "").replace("'", "")
+        )
     }
     var jsonURLS = JSON.stringify(urls);
     document.getElementById('running').style.display = "block";
     $.ajax({
         type: 'POST',
         url: "rerun",
-        data: {'workflowid': wid, 'inputs': inputs, 'urls': jsonURLS, 'resultid': resultid},
+        data: {
+            'workflowid': wid, 'inputs': inputs, 'urls': jsonURLS,
+            'resultid': resultid
+        },
         success: function (data) {
             document.getElementById('running').style.display = "none";
             document.getElementById('finished').style.display = "block";
             setTimeout(refresh, 5000);
         },
-        error: function(data) {
+        error: function (data) {
             document.getElementById('error').style.display = "block";
             setTimeout(refresh, 5000);
         },
