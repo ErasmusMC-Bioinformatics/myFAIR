@@ -131,7 +131,7 @@ function sparqlQuery() {
     }
     if (RSEARCH != '') {
         var query = "SELECT DISTINCT (?s as ?id) ?resultid ?investigation " +
-            "?study ?date ?workflow FROM " +
+            "?study ?date ?workflow ?historyid FROM " +
             "<http://127.0.0.1:3030/ds/data/" + USER + ">" +
             "WHERE {" +
             "?s <http://127.0.0.1:3030/ds/data?graph=" + USER +
@@ -142,6 +142,8 @@ function sparqlQuery() {
             "#investigation_id> ?investigation ." +
             "?s <http://127.0.0.1:3030/ds/data?graph=" + USER +
             "#workflow> ?workflow ." +
+            "?s <http://127.0.0.1:3030/ds/data?graph=" + USER +
+            "#historyid> ?historyid ." +
             "?s <http://127.0.0.1:3030/ds/data?graph=" + USER +
             "#date> ?date ." + "FILTER (regex(?study, '" + RSEARCH +
             "', 'i') || regex(?investigation, '" + RSEARCH +

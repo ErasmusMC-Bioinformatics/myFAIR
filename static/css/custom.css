@@ -181,7 +181,7 @@ fieldset[disabled] .btn-process.active {
 }
 .select-workflow {
     font-size: 10pt;
-    min-width: 10%;
+    min-width: 50%;
     max-width: 50%;
 }
 .select-folder {

@@ -4,7 +4,7 @@
 <script type="text/javascript">
 function showHisLoading() {
     document.getElementById('historydiv').style.display = "block";
-    document.getElementById('container').style.display = "none";
+    document.getElementsByClassName('container').style.display = "none";
     document.history.submit();
     return true
 }
@@ -150,8 +150,7 @@ function showHisLoading() {
                 <b style="font-size: 14pt;">Store history in Owncloud</b>
             </div>
             <div id="select" style="display: block;">
-                <form action="" method="post" name="studies">
-                    <p>Select an investigation and click Get Studies.</p>
+                <form action="" method="post" name="studies">                    
                     <input type="hidden" name="api" id="api" value={{api}}>
                     <input type="hidden" name="username" id="username" value={{username}}>
                     <input type="hidden" name="password" id="password" value={{password}}>
@@ -159,47 +158,81 @@ function showHisLoading() {
                     <input type="hidden" name="server" id="server" value={{server}}>
                     <input type="hidden" name="galaxyemail" id="galaxyemail" value={{galaxyemail}}>
                     <input type="hidden" name="galaxypass" id="galaxypass" value={{galaxypass}}>
-                    <select id="inv" name="inv" class="select-workflow">
-                        <optgroup label="Investigations">
-                            <option id="si" disabled selected value="{{ inv }}">{{ inv }}</option>
-                            {%for investigation in investigations %}
-                                <option value="{{ investigation }}">{{ investigation }}</option>
-                            {% endfor %}
-                        </optgroup>
-                    </select>
-                    <button id="index_buttons" onclick="document.studies.submit()">Get studies</button>
-                </form>
-                <br />
-                <form action="history" method="post" name="history">
-                    <p>
-                        Select a history and a study. <br />
-                        Click Send history to Owncloud to store your history.
-                    </p>
-                    <input type="hidden" name="api" id="api" value={{api}}>
-                    <input type="hidden" name="username" id="username" value={{username}}>
-                    <input type="hidden" name="password" id="password" value={{password}}>
-                    <input type="hidden" name="storage" id="storage" value={{storage}}>
-                    <input type="hidden" name="server" id="server" value={{server}}>
-                    <input type="hidden" name="inv" id="inv" value={{inv}}>
-                    <select id="history" name="history" class="select-workflow">
-                        <optgroup label="Histories">
-                            {%for history in histories %}
-                            <option value="{{ history.id }}">{{ history.name }}</option>
-                            {% endfor %}
-                        </optgroup>
-                    </select>
-                    <select id="folder" name="folder" class="select-workflow">
-                        <optgroup label="Studies">
-                            {%for study in studies %}
-                            <option value="{{ study }}">{{ study }}</option>
-                            {% endfor %}
-                        </optgroup>
-                    </select>
-                    <!-- <button id="index_buttons" onclick="document.history.submit()">Send history to Owncloud</button> -->
-                    <button id="index_buttons" onclick="showHisLoading()">Send history to Owncloud</button>
-                </form>
-                <br />
-                <br />
+                    <table class="table">
+                        <tr>
+                            <td>
+                                <p>Select an investigation and click Get Studies.</p>
+                                <select id="inv" name="inv" class="select-workflow">
+                                    <optgroup label="Investigations">
+                                        <option id="si" disabled selected value="{{ inv }}">{{ inv }}</option>
+                                            <option value="" disabled selected>Select your investigation</option>
+                                        {%for investigation in investigations %}
+                                            <option value="{{ investigation }}">{{ investigation }}</option>
+                                        {% endfor %}
+                                    </optgroup>
+                                </select>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <button id="index_buttons" style="width: 100%;" onclick="document.studies.submit()">Get studies</button>
+                            </td>
+                        </tr>
+                    </form>
+                        {% if studies %}
+                        <tr>
+                        <form action="history" method="post" name="history">
+                                <input type="hidden" name="api" id="api" value={{api}}>
+                                <input type="hidden" name="username" id="username" value={{username}}>
+                                <input type="hidden" name="password" id="password" value={{password}}>
+                                <input type="hidden" name="storage" id="storage" value={{storage}}>
+                                <input type="hidden" name="server" id="server" value={{server}}>
+                                <input type="hidden" name="inv" id="inv" value={{inv}}>
+                            <td style="width: 100%">
+                                <p>Select a study</p>
+                                <select id="folder" name="folder" class="select-workflow">
+                                    <optgroup label="Studies">
+                                        <option value="" disabled selected>Select your study</option>
+                                        {%for study in studies %}
+                                        <option value="{{ study }}">{{ study }}</option>
+                                        {% endfor %}
+                                    </optgroup>
+                                </select>
+                            </td>
+                        </tr>
+                        {% endif %}
+                        <tr>
+                            <td>
+                                &nbsp;
+                            </td>
+                        </tr>
+                        <tr>
+                            <!-- <form action="history" method="post" name="history">
+                                <input type="hidden" name="api" id="api" value={{api}}>
+                                <input type="hidden" name="username" id="username" value={{username}}>
+                                <input type="hidden" name="password" id="password" value={{password}}>
+                                <input type="hidden" name="storage" id="storage" value={{storage}}>
+                                <input type="hidden" name="server" id="server" value={{server}}>
+                                <input type="hidden" name="inv" id="inv" value={{inv}}> -->
+                            <td>
+                                <p>Select the history you want to send to ownCloud.</p>
+                                <select id="history" name="history" class="select-workflow">
+                                    <optgroup label="Histories">
+                                        {%for history in histories %}
+                                        <option value="{{ history.id }}">{{ history.name }}</option>
+                                        {% endfor %}
+                                    </optgroup>
+                                </select>
+                            </td>
+                        </tr>
+                        <tr>
+                            <!-- <td style="width: 0px"></td> -->
+                            <td>
+                                <button id="index_buttons" style="width: 100%" onclick="showHisLoading()">Send history to Owncloud</button>
+                            </td>
+                        </tr>
+                            </form>
+                </table>
             </div>
         </div>
     </div>

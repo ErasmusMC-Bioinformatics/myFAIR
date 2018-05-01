@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-while getopts t:u:r:i:s:d:e:w:m:p:a:b:h: option
+while getopts t:u:r:i:s:d:e:w:m:p:g:a:b:h: option
 do
  case "${option}"
  in
@@ -13,6 +13,7 @@ do
  w) WORKFLOW=${OPTARG};;
  m) META=${OPTARG};;
  p) PID=${OPTARG};;
+ g) HISTORYID=${OPTARG};;
  a) HEADER=${OPTARG};;
  b) VALUE=${OPTARG};;
  h) echo -n "Adds new triples to the triple store based on the supplied data "
@@ -60,5 +61,10 @@ curl http://127.0.0.1:3030/ds/update -X POST --data 'update=INSERT DATA {
 GRAPH <http://127.0.0.1:3030/ds/data/'"$USERNAME"'>{
 <http://127.0.0.1:3030/'"$RESULTID"'>
 <http://127.0.0.1:3030/ds/data?graph='"$USERNAME"'#date> '"'$DATE'"' }
+}' -H 'Accept: text/plain,*/*;q=0.9'
+curl http://127.0.0.1:3030/ds/update -X POST --data 'update=INSERT DATA {
+GRAPH <http://127.0.0.1:3030/ds/data/'"$USERNAME"'>{
+<http://127.0.0.1:3030/'"$RESULTID"'>
+<http://127.0.0.1:3030/ds/data?graph='"$USERNAME"'#historyid> '"'$HISTORYID'"'}
 }' -H 'Accept: text/plain,*/*;q=0.9';;
 esac

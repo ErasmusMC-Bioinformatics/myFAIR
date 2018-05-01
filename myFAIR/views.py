@@ -15,6 +15,7 @@ from bioblend.galaxy.client import ConnectionError
 from django.shortcuts import render_to_response, render, HttpResponseRedirect
 from django.urls import reverse
 from django.views.decorators.csrf import csrf_exempt
+from pathlib import Path
 
 
 @csrf_exempt
@@ -27,8 +28,14 @@ def login(request):
     """
     if request.method == 'POST':
         err = []
-        server = request.POST.get('server')
-        storage = request.POST.get('storage')
+        if request.POST.get('server')[-1] == '/':
+            server = request.POST.get('server')
+        else:
+            server = request.POST.get('server') + '/'
+        if request.POST.get('storage')[-1] == '/':
+            storage = request.POST.get('storage')[:-1]
+        else:
+            storage = request.POST.get('storage')
         username = request.POST.get('username')
         password = request.POST.get('password')
         galaxypass = request.POST.get("galaxypass")
@@ -361,7 +368,6 @@ def get_seek_assays(username, password, storage, study):
 
     Returns:
         dict -- Dictionary with assay IDs and URLs.
-
     """
     assays = {}
     study_id = study.split("/")[-1]
@@ -1125,7 +1131,10 @@ def make_data_files(gi, files, username, password, galaxyemail, galaxypass,
         dbkey {str} -- The genome db to use in Galaxy.
     """
     uploaded_files = []
-    ftp = gi.config.get_config()["ftp_upload_site"]
+    # if "bioinf-galaxian" in request.session.get("server"):
+    ftp = "ftp://bioinf-galaxian.erasmusmc.nl:23"
+    # else: 
+    #     ftp = gi.config.get_config()["ftp_upload_site"]
     for file in files:
         nfile = str(file).split('/')
         filename = nfile[len(nfile)-1]
@@ -1268,7 +1277,8 @@ def make_meta_files(gi, mfiles, username, password, galaxyemail,
         history_id {str} -- The Galaxy history ID to send files to.
     """
     uploaded_files = []
-    ftp = gi.config.get_config()["ftp_upload_site"]
+    # ftp = gi.config.get_config()["ftp_upload_site"]
+    ftp = "ftp://bioinf-galaxian.erasmusmc.nl:23"
     control = control.split(',')
     test = test.split(',')
     for meta in mfiles:
@@ -2039,6 +2049,19 @@ def get_output(galaxyemail, galaxypass, server):
         return in_url, in_name, out_url, out_name
 
 
+def import_galaxy_history(username, password, resultid):
+    """[summary]
+    
+    TODO: Create history import functionality.
+
+    Arguments:
+        username {[type]} -- [description]
+        password {[type]} -- [description]
+        resultid {[type]} -- [description]
+    """
+    pass
+
+
 @csrf_exempt
 def store_history(request):
     """Store the results from the Galaxy history to the 
@@ -2055,6 +2078,7 @@ def store_history(request):
         gi = GalaxyInstance(url=server,
                             email=request.session.get("galaxyemail"),
                             password=request.session.get("galaxypass"))
+        home = str(Path.home())+ "/"
         username = request.POST.get('username')
         password = request.POST.get('password')
         storage = request.POST.get('storage')
@@ -2069,7 +2093,22 @@ def store_history(request):
             inputs = []
             input_ids = []
             output = []
-            hist = gi.histories.show_history(historyid)
+            hist = gi.histories.show_history(historyid,
+                                             contents='all')
+            export = gi.histories.export_history(
+                historyid,
+                include_deleted=False,
+                include_hidden=True)
+            call(["touch", home + username + "/" + historyid + ".tar"])
+            f = open(home + username + "/" + historyid + ".tar", 'rb+')
+            gi.histories.download_history(
+                historyid,
+                export,
+                f)
+            shaname = sha1sum(f.name) + "_" + f.name.split('/')[-1]
+            os.rename(f.name, home + username + "/" +
+                      strftime("%d_%b_%Y_%H:%M:%S", gmtime()) + "_" + shaname)
+            url.append(strftime("%d_%b_%Y_%H:%M:%S", gmtime()) + "_" + shaname)
             state = hist['state_ids']
             dump = json.dumps(state)
             status = json.loads(dump)
@@ -2093,18 +2132,22 @@ def store_history(request):
                 input_ids.append(iug)
             count = 0
             for u in url:
-                cont = subprocess.Popen([
-                    "curl -s -k " + u
-                ], stdout=subprocess.PIPE, shell=True
-                ).communicate()[0].decode()
-                old_name = strftime(
-                    "%d_%b_%Y_%H:%M:%S", gmtime()
-                ) + "_" + names[count].replace('/', '_').replace(' ', '_')
-                with open(username + "/" + old_name, "w") as newfile:
-                    newfile.write(cont)
-                new_name = sha1sum(newfile.name) + "_" + old_name
-                os.rename(username + "/" + old_name, username + "/" + new_name)
-                count += 1
+                if server in u:
+                    cont = subprocess.Popen([
+                        "curl -s -k " + u
+                    ], stdout=subprocess.PIPE, shell=True
+                    ).communicate()[0].decode()
+                    old_name = strftime(
+                        "%d_%b_%Y_%H:%M:%S", gmtime()
+                    ) + "_" + names[count].replace('/', '_').replace(' ', '_')
+                    with open(username + "/" + old_name, "w") as newfile:
+                        newfile.write(cont)
+                    new_name = sha1sum(newfile.name) + "_" + old_name
+                    os.rename(username + "/" + old_name, username +
+                              "/" + new_name)
+                    count += 1
+                else:
+                    new_name = u
                 for g in groups.split(','):
                     pid = (storage + "/" + g.replace('"', '') +
                            "/results_" + str(resultid) + "/" + new_name)
@@ -2125,9 +2168,11 @@ def store_history(request):
                         "-t1 -u " + username.replace('@', '') + " -r " +
                         str(resultid) + " -p " + pid + " -s " +
                         g.replace('"', '') + " -i " + investigation + " -d " +
-                        date + " -w " + hist["name"] + " -e 0"
+                        date + " -w " + hist["name"] + " -e 0 -g " +
+                        str(historyid)
                     ], shell=True, stdout=subprocess.PIPE)
                 call(["rm", username + "/" + new_name])
+            call(["rm", home + username + "/" + shaname])
             # ug_context = {'outputs': output, 'inputs': input_ids,
                         #   'hist': hist, 'server': server}
             return HttpResponseRedirect(reverse('index'))
@@ -2170,7 +2215,10 @@ def rerun_analysis(request):
     gi = GalaxyInstance(url=request.session.get('server'),
                         email=request.session.get('galaxyemail'),
                         password=request.session.get("galaxypass"))
-    ftp = gi.config.get_config()["ftp_upload_site"]
+    if "bioinf-galaxian" in request.session.get("server"):
+        ftp = "bioinf-galaxian.erasmusmc.nl"
+    else: 
+        ftp = gi.config.get_config()["ftp_upload_site"]
     galaxyemail = request.session.get("galaxyemail")
     galaxypass = request.session.get("galaxypass")
     uploaded_files = []
@@ -2197,7 +2245,8 @@ def rerun_analysis(request):
             " -e \"put " + infile.name + "; bye\""], shell=True)
         gi.tools.upload_from_ftp(infile.name.split("/")[-1],
                                  history_id,
-                                 file_type="auto", dbkey="?")
+                                 file_type="auto", 
+                                 dbkey="?")
         uploaded_files.append(infile.name.split("/")[-1])
         call(["rm", infile.name])
     hist = gi.histories.show_history(history_id)
