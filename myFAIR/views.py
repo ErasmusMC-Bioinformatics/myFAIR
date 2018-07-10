@@ -12,7 +12,7 @@ from subprocess import check_call
 from time import strftime, gmtime
 from bioblend.galaxy import GalaxyInstance
 from bioblend.galaxy.client import ConnectionError
-from django.shortcuts import render_to_response, render, HttpResponseRedirect
+from django.shortcuts import render_to_response, render, HttpResponseRedirect, redirect
 from django.urls import reverse
 from django.views.decorators.csrf import csrf_exempt
 from pathlib import Path
@@ -92,14 +92,18 @@ def index(request):
     Arguments:
         request -- Getting the user details from request.session.
     """
-
-    login(request)
+    if (request.method == 'POST' and
+        request.session.get('username') is None
+    ):
+        login(request)
+    else:
+        pass
     if (
-        'username' not in request.session or
-        'galaxypass' not in request.session
+        request.session.get('username') is None or
+        request.session.get('username') == ""
     ):
         err = ""
-        login(request)
+        # login(request)
         return render_to_response('login.html', context={
             'error': err})
     else:
@@ -186,6 +190,217 @@ def index(request):
                                    'galaxyemail'),
                                'galaxypass': request.session.get(
                                    'galaxypass')})
+
+
+@csrf_exempt
+def seekupload(request):
+    """Upload data file to SEEK server using the selected ISA IDs.
+    TODO: Link this function to the seek function where you can select ISA.
+    TODO: Create data file instance in the selected SEEK assay.
+    TODO: Get the data_file_id and content_blob_id from the instance.
+    TODO: Get the uploaded files and send the files to the data file instance.
+    
+    Arguments:
+        request {[type]} -- [description]
+    
+    Returns:
+        [type] -- [description]
+    """
+    # title = ""
+    # description = ""
+    # projectid = 3
+    # assayid = 1
+    # userid = 1
+    # data_file_id = 0
+    # content_blob_id = 0
+    # content_type = "application/pdf"
+    # files = request.POST.get("uploadfiles")
+    # filename = ""
+    # data_instance_query = (
+    #     "curl -u " +
+    #     request.session.get("username") + ":" +
+    #     request.session.get("password") +
+    #     " -X POST \"" + request.session.get("storage") +
+    #     "/data_files\" -H \"accept: application/json\" "
+    #     "-H \"Content-Type: application/json\" "
+    #     "-d \"{ \"data\": { \"type\": \"data_files\", \"attributes\": "
+    #     "{ \"title\": \"" + title + "\", \"description\": \"" + description +
+    #     "\", \"tags\": [ \"API\", \"Data\" ], "
+    #     "\"license\": \"CC-BY-4.0\", \"content_blobs\": [ "
+    #     "{ \"original_filename\": \"" + filename +
+    #     "\", \"content_type\": \"" + content_type +
+    #     "\" } ], \"policy\": { \"access\": \"download\", \"permissions\": [ "
+    #     "{ \"resource\": { \"id\": \"" + projectid +
+    #     "\", \"type\": \"projects\" }, \"access\": \"edit\" } ] } }, "
+    #     "\"relationships\": { \"creators\": "
+    #     "{ \"data\": [ { \"id\": \"" + userid +
+    #     "\", \"type\": \"people\" } ] }, \"projects\": "
+    #     "{ \"data\": [ { \"id\": \"" + projectid +
+    #     "\", \"type\": \"projects\" } ] }, \"assays\": "
+    #     "{ \"data\": [ { \"id\": \"" + assayid +
+    #     "\", \"type\": \"assays\" } ] } } }}\""
+    # )
+    seek_data_ids = []
+    get_data_files = (
+        "curl -X GET \"" +
+        request.session.get("storage") + "/data_files\" "
+        "-H \"accept: application/json\""
+    )
+    all_data_files = subprocess.Popen(
+        [get_data_files], stdout=subprocess.PIPE, shell=True).communicate()[0].decode()
+    data_files = json.loads(all_data_files)
+    for df in range(0, len(data_files["data"])):
+        seek_data_ids.append(data_files["data"][df]["id"])
+    for d in range(0, len(data_files["data"])):
+        if data_files["data"][d]["id"] == max(seek_data_ids):
+            print(data_files["data"][d]["attributes"]["title"])
+    # data_file_query = (
+    #     "curl -u " +
+    #     request.session.get("username") + ":" +
+    #     request.session.get("passsword") +
+    #     " -X PUT \"" + request.session.get("storage") + "/data_files/" +
+    #     str(data_file_id) + "/content_blobs/" + str(content_blob_id) + "\" "
+    #     "-H \"accept: */*\" -H \"Content-Type: application/octet-stream -T " +
+    #     files
+    # )
+    # query = ("curl -X PUT "
+    #          "\"http://127.0.0.1:3000/data_files/1/content_blobs/2\" "
+    #          "-H \"accept: */*\" -H \"Content-Type: application/octet-stream\""
+    #          " -d \"" + files + "\"")
+    # call([query], shell=True)
+    return HttpResponseRedirect(reverse("index"))
+
+
+@csrf_exempt
+def seek(request):
+    """Testing the SEEK API
+    
+    Arguments:
+        request -- Requesting information to test the SEEK API.
+    
+    Returns:
+        [type] -- [description]
+    """
+    projects = {}
+    selected_project = ""
+    selected_project_name = ""
+    selected_investigation = ""
+    selected_investigation_name = ""
+    selected_study = ""
+    selected_study_name = ""
+    selected_assay = ""
+    selected_assay_name = ""
+    inv_names = {}
+    study_names = {}
+    assay_names = {}
+    searches = {}
+    get_projects = "curl -s -X GET \"" + \
+        request.session.get("storage") + \
+        "/projects\" -H \"accept: application/json\""
+    json_projects = subprocess.Popen([get_projects],
+                                     stdout=subprocess.PIPE,
+                                     shell=True).communicate()[0].decode()
+    test_projects = json.loads(json_projects)
+    for x in range(0, len(test_projects["data"])):
+        projects[test_projects["data"][x]["id"]
+                 ] = test_projects["data"][x]["attributes"]["title"]
+    if request.method == 'POST':
+        if request.POST.get("projects") is not None:
+            selected_project = request.POST.get("projects").split(',')[0]
+            selected_project_name = request.POST.get("projects").split(',')[1]
+        elif request.POST.get("proj"):
+            selected_project = request.POST.get("proj").split(',')[0]
+            selected_project_name = request.POST.get("proj").split(',')[1]
+        if request.POST.get("investigations") is not None:
+            selected_investigation = request.POST.get(
+                "investigations").split(',')[0]
+            selected_investigation_name = request.POST.get(
+                "investigations").split(',')[1]
+        elif request.POST.get("inv") and request.POST.get("proj") is not None:
+            selected_investigation = request.POST.get("inv").split(',')[0]
+            selected_investigation_name = request.POST.get("inv").split(',')[1]
+        if request.POST.get("studies") is not None:
+            selected_study = request.POST.get("studies").split(',')[0]
+            selected_study_name = request.POST.get("studies").split(',')[1]
+        elif request.POST.get("stu") is not None and request.POST.get("as") is not None:
+            selected_study = request.POST.get("stu").split(',')[0]
+            selected_study_name = request.POST.get("stu").split(',')[1]
+        if request.POST.get("assays") is not None:
+            selected_assay = request.POST.get("assays").split(',')[0]
+            selected_assay_name = request.POST.get("assays").split(',')[1]
+        elif request.POST.get("as") is not None:
+            selected_assay = request.POST.get("as").split(',')[0]
+            selected_assay_name = request.POST.get("as").split(',')[1]
+        if projects and not inv_names:
+            inv_search = []
+            search_project = ("curl -s -X GET \"" + request.session.get(
+                "storage") + "/projects/" + selected_project +
+                "\" -H \"accept: application/json\"")
+            project_search_results = subprocess.Popen(
+                [search_project],
+                stdout=subprocess.PIPE,
+                shell=True).communicate()[0].decode()
+            test_search = json.loads(project_search_results)
+            for inv in range(0, len(test_search["data"]["relationships"]["investigations"]["data"])):
+                inv_search.append(
+                    test_search["data"]["relationships"]["investigations"]["data"][inv]["id"])
+            for inv_id in inv_search:
+                inv_search_query = "curl -s -X GET \"" + request.session.get(
+                    "storage") + "/investigations/" + inv_id + "\" -H \"accept: application/json\""
+                res_investogations = subprocess.Popen([inv_search_query], stdout=subprocess.PIPE,
+                                                      shell=True).communicate()[0].decode()
+                found_investigations = json.loads(res_investogations)
+                inv_names[inv_id] = found_investigations["data"]["attributes"]["title"]
+        if inv_names and projects and not study_names and selected_investigation != "":
+            study_search = []
+            search_investigation = "curl -s -X GET \"" + request.session.get(
+                "storage") + "/investigations/" + selected_investigation + "\" -H \"accept: application/json\""
+            investigation_search_results = subprocess.Popen([search_investigation],
+                                                            stdout=subprocess.PIPE,
+                                                            shell=True).communicate()[0].decode()
+            test_search = json.loads(investigation_search_results)
+            for study in range(0, len(test_search["data"]["relationships"]["studies"]["data"])):
+                study_search.append(
+                    test_search["data"]["relationships"]["studies"]["data"][study]["id"])
+            for study_id in study_search:
+                study_search_query = "curl -s -X GET \"" + request.session.get(
+                    "storage") + "/studies/" + study_id + "\" -H \"accept: application/json\""
+                res_studies = subprocess.Popen([study_search_query], stdout=subprocess.PIPE,
+                                               shell=True).communicate()[0].decode()
+                found_studies = json.loads(res_studies)
+                study_names[study_id] = found_studies["data"]["attributes"]["title"]
+        if study_names and not assay_names and selected_study != "":
+            assay_search = []
+            search_assay = "curl -s -X GET \"" + request.session.get(
+                "storage") + "/studies/" + selected_study + "\" -H \"accept: application/json\""
+            assay_search_results = subprocess.Popen([search_assay],
+                                                    stdout=subprocess.PIPE,
+                                                    shell=True).communicate()[0].decode()
+            test_search = json.loads(assay_search_results)
+            for assay in range(0, len(test_search["data"]["relationships"]["assays"]["data"])):
+                assay_search.append(
+                    test_search["data"]["relationships"]["assays"]["data"][assay]["id"])
+            for assay_id in assay_search:
+                assay_search_query = "curl -s -X GET \"" + request.session.get(
+                    "storage") + "/assays/" + assay_id + "\" -H \"accept: application/json\""
+                res_assays = subprocess.Popen(
+                    [assay_search_query], stdout=subprocess.PIPE, shell=True).communicate()[0].decode()
+                found_assays = json.loads(res_assays)
+                assay_names[assay_id] = found_assays["data"]["attributes"]["title"]
+        print(request.POST.get('uploadfiles'))
+    return render(request, "seek.html", context={'projects': projects,
+                                                 'investigations': inv_names,
+                                                 'studies': study_names,
+                                                 'assays': assay_names,
+                                                 'proj': selected_project,
+                                                 'proj_name': selected_project_name,
+                                                 'inv': selected_investigation,
+                                                 'inv_name': selected_investigation_name,
+                                                 'stu': selected_study,
+                                                 'stu_name': selected_study_name,
+                                                 'as': selected_assay,
+                                                 'as_name': selected_assay_name,
+                                                 'searches': searches})
 
 
 def get_investigation_folders(storage, username, password):
@@ -287,6 +502,9 @@ def get_galaxy_info(url, email, password):
     his = json.loads(hist)
     genomes = gi.genomes.get_genomes()
     dbkeys = []
+    ftp = gi.config.get_config()["ftp_upload_site"]
+    if "bioinf-galaxian" in ftp:
+        ftp = "ftp://bioinf-galaxian.erasmusmc.nl:23"
     for gene in genomes:
         for g in gene:
             if "(" not in g:
@@ -584,7 +802,7 @@ def investigation(request):
         request -- A request to get the current session.
     """
     if request.session.get('username') is not None:
-        if "/owncloud/" in request.session.get('storage'):
+        if "webdav" in request.session.get('storage'):
             oc_folders = subprocess.Popen([
                 "curl -s -X PROPFIND -u " +
                 request.session.get('username') + ":" +
@@ -604,7 +822,12 @@ def investigation(request):
             studies = []
             oc_studies = ""
             for oc in oc_folders:
-                if "/owncloud/" in request.session.get('storage'):
+                if "b2drop" in request.session.get('storage'):
+                    new = oc.replace(
+                        '/remote.php/webdav/', '').replace('/', '')
+                    if "." not in new:
+                        folders.append(new)
+                elif "/owncloud/" in request.session.get('storage'):
                     new = oc.replace(
                         '/owncloud/remote.php/webdav/', '').replace('/', '')
                     if "." not in new:
@@ -621,7 +844,7 @@ def investigation(request):
                 request.POST.get('folder') != "" and
                 request.POST.get('folder') is not None
             ):
-                if "/owncloud/" in request.session.get('storage'):
+                if "webdav" in request.session.get('storage'):
                     oc_studies = subprocess.Popen([
                         "curl -s -X PROPFIND -u " +
                         request.session.get('username') + ":" +
@@ -848,15 +1071,18 @@ def get_input_data(galaxyemail, galaxypass, server):
     Returns:
         list -- Input files from the Galacxy history.
         int -- The amount of input datasets in the history.
+    
+    TODO: Change dataset ID and name to a dictionary and call when uploading
+    to Galaxy.
     """
     gi = GalaxyInstance(url=server, email=galaxyemail, password=galaxypass)
     history_id = get_history_id(galaxyemail, galaxypass, server)
     hist_contents = gi.histories.show_history(history_id, contents=True)
-    inputs = []
+    inputs = {}
     datacount = 0
     datasets = [dataset for dataset in hist_contents if not dataset['deleted']]
     for dataset in datasets:
-        inputs.append(dataset['id'])
+        inputs[dataset['name']] = dataset['id']
         datacount += 1
     return inputs, datacount
 
@@ -1131,8 +1357,9 @@ def make_data_files(gi, files, username, password, galaxyemail, galaxypass,
         dbkey {str} -- The genome db to use in Galaxy.
     """
     uploaded_files = []
-    # if "bioinf-galaxian" in request.session.get("server"):
-    ftp = "ftp://bioinf-galaxian.erasmusmc.nl:23"
+    ftp = gi.config.get_config()["ftp_upload_site"]
+    if "bioinf-galaxian" in ftp:
+        ftp = "ftp://bioinf-galaxian.erasmusmc.nl:23"
     # else: 
     #     ftp = gi.config.get_config()["ftp_upload_site"]
     for file in files:
@@ -1192,7 +1419,7 @@ def make_data_files(gi, files, username, password, galaxyemail, galaxypass,
         status['new'] or
         status['upload']
     ):
-        time.sleep(20)
+        time.sleep(60)
         hist = gi.histories.show_history(history_id)
         state = hist['state_ids']
         dump = json.dumps(state)
@@ -1277,8 +1504,9 @@ def make_meta_files(gi, mfiles, username, password, galaxyemail,
         history_id {str} -- The Galaxy history ID to send files to.
     """
     uploaded_files = []
-    # ftp = gi.config.get_config()["ftp_upload_site"]
-    ftp = "ftp://bioinf-galaxian.erasmusmc.nl:23"
+    ftp = gi.config.get_config()["ftp_upload_site"]
+    if "bioinf-galaxian" in ftp:
+        ftp = "ftp://bioinf-galaxian.erasmusmc.nl:23"
     control = control.split(',')
     test = test.split(',')
     for meta in mfiles:
@@ -1329,7 +1557,7 @@ def make_meta_files(gi, mfiles, username, password, galaxyemail,
             status['new'] or
             status['upload']
     ):
-        time.sleep(20)
+        time.sleep(60)
         hist = gi.histories.show_history(history_id)
         state = hist['state_ids']
         dump = json.dumps(state)
@@ -1367,8 +1595,8 @@ def upload(request):
     workflowid = request.POST.get('workflowid')
     pid = request.POST.get('data_id')
     onlydata = request.POST.get('onlydata')
-    makecol = request.POST.get('col')
-    data_ids = []
+    # makecol = request.POST.get('col')
+    # data_ids = []
     control = request.POST.get('samples')
     test = request.POST.get('samplesb')
     new_hist = request.POST.get('historyname')
@@ -1410,7 +1638,6 @@ def upload(request):
                             request.session.get('galaxypass'),
                             control, test, history_id)
         if workflowid != "0":
-            in_count = 0
             resultid = uuid.uuid1()
             datamap = dict()
             mydict = {}
@@ -1421,25 +1648,30 @@ def upload(request):
                         label = jsonwf["steps"][str(i)]["inputs"][0]["name"]
                     except IndexError:
                         label = jsonwf["steps"][str(i)]["label"]
-                    mydict["in%s" % (
-                        str(i + 1))] = gi.workflows.get_workflow_inputs(
-                            workflowid, label=label)[0]
+                    mydict[label] = gi.workflows.get_workflow_inputs(
+                        workflowid, label=label)[0]
+            in_count = 0
             for k, v in mydict.items():
-                k
-                datamap[v] = {'src': "hda", 'id': get_input_data(
+                datasets = get_input_data(
                     request.session.get('galaxyemail'),
                     request.session.get('galaxypass'),
-                    request.session.get('server')
-                )[0][in_count]}
-                data_ids.append(get_input_data(
-                    request.session.get('galaxyemail'),
-                    request.session.get(
-                        'galaxypass'),
-                    request.session.get('server'))[0][in_count])
+                    request.session.get('server'))[0]
+                # datamap[v] = {'src': "hda", 'id': get_input_data(
+                #     request.session.get('galaxyemail'),
+                #     request.session.get('galaxypass'),
+                #     request.session.get('server')[0][in_count]
+                for dname, did in datasets.items():
+                    if k in dname:
+                        datamap[v] = {'src': "hda", 'id': did}
+                # data_ids.append(get_input_data(
+                #     request.session.get('galaxyemail'),
+                #     request.session.get(
+                #         'galaxypass'),
+                #     request.session.get('server'))[0][in_count])
                 in_count += 1
-            if makecol == "true":
-                gi.histories.create_dataset_collection(
-                    history_id, make_collection(data_ids))
+            # if makecol == "true":
+            #     gi.histories.create_dataset_collection(
+            #         history_id, make_collection(data_ids))
             gi.workflows.invoke_workflow(
                 workflowid, datamap, history_id=history_id)
             gi.workflows.export_workflow_to_local_path(
@@ -1449,16 +1681,16 @@ def upload(request):
             datafiles = get_output(request.session.get('galaxyemail'),
                                    request.session.get('galaxypass'),
                                    request.session.get('server'))
-            store_results(1, datafiles, request.session.get('server'),
+            store_results(1, gi, datafiles, request.session.get('server'),
                           request.session.get('username'),
                           request.session.get('password'),
                           request.session.get('storage'),
-                          groups, resultid, investigations, date)
-            store_results(3, datafiles, request.session.get('server'),
+                          groups, resultid, investigations, date, history_id)
+            store_results(3, gi, datafiles, request.session.get('server'),
                           request.session.get('username'),
                           request.session.get('password'),
                           request.session.get('storage'),
-                          groups, resultid, investigations, date)
+                          groups, resultid, investigations, date, history_id)
             ga_store_results(request.session.get('username'),
                              request.session.get('password'), workflowid,
                              request.session.get('storage'),
@@ -1471,20 +1703,23 @@ def upload(request):
                     'server'
                 )})
         else:
-            if makecol == "true":
-                history_data = gi.histories.show_history(
-                    history_id, contents=True)
-                for c in range(0, len(history_data)):
-                    data_ids.append(history_data[c]['id'])
-                gi.histories.create_dataset_collection(
-                    history_id, make_collection(data_ids))
+            # if makecol == "true":
+            #     history_data = gi.histories.show_history(
+            #         history_id, contents=True)
+            #     for c in range(0, len(history_data)):
+            #         data_ids.append(history_data[c]['id'])
+            #     gi.histories.create_dataset_collection(
+            #         history_id, make_collection(data_ids))
             ug_store_results(
-                request.session.get(
-                    'galaxyemail'), request.session.get('galaxypass'),
-                request.session.get('server'), workflowid,
-                request.session.get(
-                    'username'), request.session.get('password'),
-                request.session.get('storage'), groups, investigations, date)
+                gi,
+                request.session.get('galaxyemail'), 
+                request.session.get('galaxypass'),
+                request.session.get('server'), 
+                workflowid,
+                request.session.get('username'), 
+                request.session.get('password'),
+                request.session.get('storage'), 
+                groups, investigations, date, history_id)
             return HttpResponseRedirect(reverse("index"))
 
 
@@ -1515,9 +1750,9 @@ def make_collection(data_ids):
     return collection
 
 
-def store_results(column, datafiles, server, username, password,
-                  storage, groups, resultid, investigations, date):
-    """Store input and output files that where created or used in a 
+def store_results(column, gi, datafiles, server, username, password, storage,
+                  groups, resultid, investigations, date, historyid):
+    """Store input and output files that where created or used in a
     Galaxy workflow.
 
     Arguments:
@@ -1545,6 +1780,22 @@ def store_results(column, datafiles, server, username, password,
             outputfile.write(cont)
         new_name = sha1sum(username + "/" + old_name) + "_" + old_name
         os.rename(username + "/" + old_name, username + "/" + new_name)
+        # export = gi.histories.export_history(
+        #             historyid,
+        #             include_deleted=False,
+        #             include_hidden=True)
+        # home = str(Path.home())+ "/"
+        # call(["touch", home + username + "/" + historyid + ".tar"])
+        # f = open(home + username + "/" + historyid + ".tar", 'rb+')
+        # gi.histories.download_history(
+        #     historyid,
+        #     export,
+        #     f)
+        # shaname = sha1sum(f.name) + "_" + f.name.split('/')[-1]
+        # os.rename(f.name, home + username + "/" +
+        #         strftime("%d_%b_%Y_%H:%M:%S", gmtime()) + "_" + shaname)
+        # history_tar = strftime("%d_%b_%Y_%H:%M:%S", gmtime()) + "_" + shaname
+        # url.append(strftime("%d_%b_%Y_%H:%M:%S", gmtime()) + "_" + shaname)
         for i in investigations:
             for g in groups:
                 call([
@@ -1559,6 +1810,13 @@ def store_results(column, datafiles, server, username, password,
                     g.replace('"', '') + "/results_" + str(resultid) +
                     "/" + new_name
                 ], shell=True)
+                # call([
+                #     "curl -s -k -u " + username + ":" + password +
+                #     " -T " + '\'' + username + "/" + new_name + '\'' +
+                #     " " + storage + "/" + i.replace('"', '') + "/" +
+                #     g.replace('"', '') + "/results_" + str(resultid) +
+                #     "/" + history_tar
+                # ], shell=True)
                 call([
                     "curl http://127.0.0.1:3030/ds/update -X POST --data "
                     "'update=INSERT DATA { "
@@ -1580,6 +1838,17 @@ def store_results(column, datafiles, server, username, password,
                     "> <http://127.0.0.1:3030/ds/data?graph=" +
                     username.replace('@', '') + "#results_id> \"" +
                     str(resultid) + "\" } }' -H 'Accept: text/plain,*/*;q=0.9'"
+                ], shell=True)
+                call([
+                    "curl http://127.0.0.1:3030/ds/update -X POST --data "
+                    "'update=INSERT DATA { "
+                    "GRAPH <http://127.0.0.1:3030/ds/data/" +
+                    username.replace('@', '') +
+                    "> { <http://127.0.0.1:3030/" + str(resultid) +
+                    "> <http://127.0.0.1:3030/ds/data?graph=" +
+                    username.replace('@', '') + "#historyid> \"" + 
+                    str(historyid) + "\" } }'"
+                    " -H 'Accept: text/plain,*/*;q=0.9'"
                 ], shell=True)
                 call([
                     "curl http://127.0.0.1:3030/ds/update -X POST --data "
@@ -1666,8 +1935,9 @@ def ga_store_results(username, password, workflowid, storage,
             call(["rm", username + "/" + new_name])
 
 
-def ug_store_results(galaxyemail, galaxypass, server, workflowid, username,
-                     password, storage, groups, investigations, date):
+def ug_store_results(gi, galaxyemail, galaxypass, server, workflowid,
+                     username, password, storage, groups,
+                     investigations, date, historyid):
     """Store results that have been generated 
     without the use of a Galaxy workflow
 
@@ -1696,6 +1966,21 @@ def ug_store_results(galaxyemail, galaxypass, server, workflowid, username,
         new_name = sha1sum(username + "/" + old_name) + "_" + old_name
         os.rename(username + "/" + old_name, username + "/" + new_name)
         time.sleep(5)
+        # export = gi.histories.export_history(
+        #         historyid,
+        #         include_deleted=False,
+        #         include_hidden=True)
+        # home = str(Path.home()) + "/"
+        # call(["touch", home + username + "/" + historyid + ".tar"])
+        # f = open(home + username + "/" + historyid + ".tar", 'rb+')
+        # gi.histories.download_history(
+        #     historyid,
+        #     export,
+        #     f)
+        # shaname = sha1sum(f.name) + "_" + f.name.split('/')[-1]
+        # os.rename(f.name, home + username + "/" +
+        #           strftime("%d_%b_%Y_%H:%M:%S", gmtime()) + "_" + shaname)
+        # history_tar = strftime("%d_%b_%Y_%H:%M:%S", gmtime()) + "_" + shaname
         for i in investigations:
             for g in groups:
                 call([
@@ -1710,6 +1995,12 @@ def ug_store_results(galaxyemail, galaxypass, server, workflowid, username,
                     i.replace('"', '') + "/" + g.replace('"', '') +
                     "/results_" + str(resultid) + "/" + new_name + " "
                 ], shell=True)
+                # call([
+                #     "curl -s -k -u " + username + ":" + password + " -T " +
+                #     username + "/" + new_name + " " + storage + "/" +
+                #     i.replace('"', '') + "/" + g.replace('"', '') +
+                #     "/results_" + str(resultid) + "/" + history_tar + " "
+                # ], shell=True)
                 call([
                     "curl http://127.0.0.1:3030/ds/update -X POST --data "
                     "'update=INSERT DATA { "
@@ -1729,6 +2020,16 @@ def ug_store_results(galaxyemail, galaxypass, server, workflowid, username,
                     str(resultid) + "> <http://127.0.0.1:3030/ds/data?graph=" +
                     username.replace('@', '') + "#results_id> \"" +
                     str(resultid) + "\" } }' -H 'Accept: text/plain,*/*;q=0.9'"
+                ], shell=True)
+                call([
+                    "curl http://127.0.0.1:3030/ds/update -X POST --data "
+                    "'update=INSERT DATA { "
+                    "GRAPH <http://127.0.0.1:3030/ds/data/" +
+                    username.replace('@', '') + "> { <http://127.0.0.1:3030/" +
+                    str(resultid) + "> <http://127.0.0.1:3030/ds/data?graph=" +
+                    username.replace('@', '') + "#historyid> \"" +
+                    str(historyid) +
+                    "\" } }' -H 'Accept: text/plain,*/*;q=0.9'"
                 ], shell=True)
                 call([
                     "curl http://127.0.0.1:3030/ds/update -X POST --data "
@@ -2013,7 +2314,7 @@ def get_output(galaxyemail, galaxypass, server):
             status['new'] or
             status['upload']
         ):
-            time.sleep(20)
+            time.sleep(60)
             hist = gi.histories.show_history(historyid)
             state = hist['state_ids']
             dump = json.dumps(state)
@@ -2049,17 +2350,27 @@ def get_output(galaxyemail, galaxypass, server):
         return in_url, in_name, out_url, out_name
 
 
-def import_galaxy_history(username, password, resultid):
-    """[summary]
+@csrf_exempt
+def import_galaxy_history(request):
+    """Download the Galaxy history .tar file from the storage location.
     
-    TODO: Create history import functionality.
-
     Arguments:
-        username {[type]} -- [description]
-        password {[type]} -- [description]
-        resultid {[type]} -- [description]
+        request -- Request data to download the Galaxy history.
     """
-    pass
+    # gi = GalaxyInstance(
+    #     url=request.session.get("server"), 
+    #     email=request.session.get("galaxyemail"), 
+    #     password=request.session.get("galaxypass"))
+    username = request.session.get("username")
+    password = request.session.get("password")
+    tar = request.POST.get("tar")
+    resultid = request.POST.get("resultid").strip("\n")
+    call([
+        "curl -s -k -u " + username + ":" + password + " " + 
+        request.session.get("storage") + "/" + resultid + "/" + tar + 
+        " --output " + str(Path.home()) + "/" + username + "/" + tar
+    ], shell=True)
+    return HttpResponseRedirect(reverse("results"))
 
 
 @csrf_exempt
@@ -2204,7 +2515,7 @@ def rerun_analysis(request):
     """Rerun an analysis stored in the triple store.
     Search for a result on the homepage and view the results.
     In the resultspage there is an option to rerun the analysis.
-
+    
     Arguments:
         request -- A request to receive information to rerun previously
         generated results.
@@ -2215,15 +2526,15 @@ def rerun_analysis(request):
     gi = GalaxyInstance(url=request.session.get('server'),
                         email=request.session.get('galaxyemail'),
                         password=request.session.get("galaxypass"))
-    if "bioinf-galaxian" in request.session.get("server"):
-        ftp = "bioinf-galaxian.erasmusmc.nl"
-    else: 
-        ftp = gi.config.get_config()["ftp_upload_site"]
+    ftp = gi.config.get_config()["ftp_upload_site"]
+    if "bioinf-galaxian" in ftp:
+        ftp = "ftp://bioinf-galaxian.erasmusmc.nl:23"
     galaxyemail = request.session.get("galaxyemail")
     galaxypass = request.session.get("galaxypass")
     uploaded_files = []
     urls = request.POST.get('urls')
     urls = urls.split(',')
+    urls = sorted(urls)
     gi.histories.create_history(name=resultid)
     history_id = get_history_id(request.session.get('galaxyemail'),
                                 request.session.get('galaxypass'),
@@ -2260,7 +2571,7 @@ def rerun_analysis(request):
             status['new'] or
             status['upload']
     ):
-        time.sleep(20)
+        time.sleep(60)
         hist = gi.histories.show_history(history_id)
         state = hist['state_ids']
         dump = json.dumps(state)
@@ -2304,7 +2615,6 @@ def rerun_analysis(request):
         gi.workflows.import_workflow_from_local_path(gafile.name)
         workflows = gi.workflows.get_workflows(published=False)
         jwf = json.loads(gacont)
-        in_count = 0
         datamap = dict()
         mydict = {}
         for workflow in workflows:
@@ -2323,13 +2633,16 @@ def rerun_analysis(request):
                 mydict["in%s" % (str(i+1))] = gi.workflows.get_workflow_inputs(
                     newworkflowid, label=label
                 )[0]
+        print(urls)
+        print(gi.workflows.get_workflow_inputs(newworkflowid, label=label))
+        in_count = 1
         for dummyk, v in mydict.items():
             datamap[v] = {'src': "hda",
                           'id': get_input_data(
                               request.session.get('galaxyemail'),
                               request.session.get('galaxypass'),
                               request.session.get('server'))[0][in_count]}
-            in_count += 1
+            in_count -= 1
         gi.workflows.invoke_workflow(
             newworkflowid, datamap, history_id=history_id)
         gi.workflows.delete_workflow(newworkflowid)

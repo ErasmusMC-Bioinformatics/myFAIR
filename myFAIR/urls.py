@@ -36,4 +36,7 @@ urlpatterns = [
     url(r'^history', views.store_history, name="history"),
     url(r'^investigation', views.investigation, name="investigation"),
     url(r'ontologies', views.onto, name="ontologies"),
+    url(r'seek', views.seek, name="seek"),
+    url(r'seekupload', views.seekupload, name="seekupload"),
+    url(r'^import', views.import_galaxy_history, name="import"),
 ] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

@@ -3,9 +3,18 @@
 ** It also sends some important data to views.py to be able to 
 ** upload data to Galaxy.
 */
-var count = 0;
-var SPARQL_ENDPOINT = 'http://localhost:3030/ds/query?query='
+// var count = 0;
 var USER = document.getElementById('user').innerHTML.replace('@', '');
+var SERVER = document.getElementById('storagename').innerHTML
+if(SERVER.indexOf("seek") > 0 || SERVER.indexOf("127.0.0.1") > 0) {
+    // var SPARQL_ENDPOINT = 'http://seek.erasmusmc.nl:8890/sparql?default-graph-uri=seek:public&query='
+    var SPARQL_ENDPOINT = SERVER + ':8890/sparql?default-graph-uri=seek:public&query='
+    // var SPARQL_ENDPOINT = 'http://localhost:8890/sparql?default-graph-uri=seek-development:public&query='
+    document.getElementById("ssearch").style.display = "block";
+    document.getElementById("asearch").style.display = "block";
+} else {
+    var SPARQL_ENDPOINT = 'http://localhost:3030/ds/query?query='
+}
 // Show or hide divs and tables on page load
 // Create a var with all searchable items
 $(document).ready(function () {
@@ -15,34 +24,27 @@ $(document).ready(function () {
     $("#results").addClass('hidden');
     $("#errorPanel").addClass('hidden');
     $("#infoPanel").addClass('hidden');
-    var sampleid = "SELECT DISTINCT ?value FROM " +
-        "<http://127.0.0.1:3030/ds/data/" + USER + "> WHERE " +
-        "{ ?sample <http://127.0.0.1:3030/ds/data?graph=" + USER +
-        "#sample_id> ?value }" + "ORDER BY(?value)"
-    var study = "SELECT DISTINCT ?value FROM " +
-        "<http://127.0.0.1:3030/ds/data/" + USER + "> WHERE " +
-        "{ ?s <http://127.0.0.1:3030/ds/data?graph=" + USER +
-        "#group_id> ?value }" + "ORDER BY (?value)"
-    var disease = "SELECT DISTINCT ?value FROM " +
-        "<http://127.0.0.1:3030/ds/data/" + USER + "> WHERE " +
-        "{ ?s <http://127.0.0.1:3030/ds/data?graph=" + USER +
-        "#disease> ?value }" + "ORDER BY (?value)"
-    var investigation = "SELECT DISTINCT ?value FROM " +
-        "<http://127.0.0.1:3030/ds/data/" + USER + "> WHERE " +
-        "{ ?s <http://127.0.0.1:3030/ds/data?graph=" + USER +
-        "#investigation_id> ?value }" + "ORDER BY (?value)"
-    fillList = [study, investigation, sampleid, disease]
-    resultList = [study, investigation]
-    for (fl in fillList) {
-        var service = encodeURI(
-            SPARQL_ENDPOINT + fillList[fl] + '&format=json').replace(
+    if(SPARQL_ENDPOINT.indexOf("seek") >= 0 || SPARQL_ENDPOINT.indexOf("127.0.0.1") >= 0){
+        var investigations = "PREFIX dcterms: <http://purl.org/dc/terms/>" + 
+            "SELECT ?value WHERE {?s dcterms:title ?value . " +
+            "FILTER regex(?s, 'investigations', 'i')}"
+        var studies = "PREFIX dcterms: <http://purl.org/dc/terms/> " +
+            "SELECT ?value WHERE {" +
+            "?s dcterms:title ?value " +
+            "FILTER regex(?s, 'studies', 'i')}"
+        var assays = "PREFIX dcterms: <http://purl.org/dc/terms/> " +
+            "SELECT ?value WHERE {" +
+            "?s dcterms:title ?value " +
+            "FILTER regex(?s, 'assays', 'i')}"
+        var iservice = encodeURI(
+            SPARQL_ENDPOINT + investigations + '&format=json').replace(
                 /#/g, '%23').replace('+', '%2B');
         $.ajax({
-            url: service, dataType: 'jsonp', success: function (result) {
-                var inputOption = document.getElementById('search');
-                var dataList = document.getElementById('searchDataList');
-                $(inputOption).empty();
-                $(inputOption).val('');
+            url: iservice, dataType: 'jsonp', success: function (result) {
+                var iinputOption = document.getElementById('isearch');
+                var idataList = document.getElementById('isearchDataList');
+                $(iinputOption).empty();
+                $(iinputOption).val('');
                 result.results.bindings.forEach(function (v) {
                     var option = document.createElement('option');
                     option.setAttribute('width', '70%');
@@ -54,13 +56,115 @@ $(document).ready(function () {
                         option.value = v.value.value;
                         option.setAttribute('data-input-value', v.value.value);
                     }
-                    if (dataList !== null) {
-                        dataList.appendChild(option);
+                    if (idataList !== null) {
+                        idataList.appendChild(option);
                     }
                 });
             }
         });
+        var sservice = encodeURI(
+            SPARQL_ENDPOINT + studies + '&format=json').replace(
+                /#/g, '%23').replace('+', '%2B');
+        $.ajax({
+            url: sservice, dataType: 'jsonp', success: function (result) {
+                var sinputOption = document.getElementById('ssearch');
+                var sdataList = document.getElementById('ssearchDataList');
+                $(sinputOption).empty();
+                $(sinputOption).val('');
+                result.results.bindings.forEach(function (v) {
+                    var option = document.createElement('option');
+                    option.setAttribute('width', '70%');
+                    if (v.url !== undefined) {
+                        option.value = v.value.value;
+                        option.setAttribute('data-input-value', v.url.value);
+                    }
+                    else {
+                        option.value = v.value.value;
+                        option.setAttribute('data-input-value', v.value.value);
+                    }
+                    if (sdataList !== null) {
+                        sdataList.appendChild(option);
+                    }
+                });
+            }
+        });
+        var aservice = encodeURI(
+            SPARQL_ENDPOINT + assays + '&format=json').replace(
+                /#/g, '%23').replace('+', '%2B');
+        $.ajax({
+            url: aservice, dataType: 'jsonp', success: function (result) {
+                var ainputOption = document.getElementById('asearch');
+                var adataList = document.getElementById('asearchDataList');
+                $(ainputOption).empty();
+                $(ainputOption).val('');
+                result.results.bindings.forEach(function (v) {
+                    var option = document.createElement('option');
+                    option.setAttribute('width', '70%');
+                    if (v.url !== undefined) {
+                        option.value = v.value.value;
+                        option.setAttribute('data-input-value', v.url.value);
+                    }
+                    else {
+                        option.value = v.value.value;
+                        option.setAttribute('data-input-value', v.value.value);
+                    }
+                    if (adataList !== null) {
+                        adataList.appendChild(option);
+                    }
+                });
+            }
+        });
+    } else {
+        var sampleid = "SELECT DISTINCT ?value FROM " +
+            "<http://127.0.0.1:3030/ds/data/" + USER + "> WHERE " +
+            "{ ?sample <http://127.0.0.1:3030/ds/data?graph=" + USER +
+            "#sample_id> ?value }" + "ORDER BY(?value)"
+        var studies = "SELECT DISTINCT ?value FROM " +
+            "<http://127.0.0.1:3030/ds/data/" + USER + "> WHERE " +
+            "{ ?s <http://127.0.0.1:3030/ds/data?graph=" + USER +
+            "#group_id> ?value }" + "ORDER BY (?value)"
+        var disease = "SELECT DISTINCT ?value FROM " +
+            "<http://127.0.0.1:3030/ds/data/" + USER + "> WHERE " +
+            "{ ?s <http://127.0.0.1:3030/ds/data?graph=" + USER +
+            "#disease> ?value }" + "ORDER BY (?value)"
+        var investigations = "SELECT DISTINCT ?value FROM " +
+            "<http://127.0.0.1:3030/ds/data/" + USER + "> WHERE " +
+            "{ ?s <http://127.0.0.1:3030/ds/data?graph=" + USER +
+            "#investigation_id> ?value }" + "ORDER BY (?value)"
+        fillList = [studies, investigations, sampleid, disease]
+        for (fl in fillList) {
+            var service = encodeURI(
+                SPARQL_ENDPOINT + fillList[fl] + '&format=json').replace(
+                    /#/g, '%23').replace('+', '%2B');
+            $.ajax({
+                url: service, dataType: 'jsonp', success: function (result) {
+                    var iinputOption = document.getElementById('isearch');
+                    var idataList = document.getElementById('isearchDataList');
+                    $(iinputOption).empty();
+                    $(iinputOption).val('');
+                    result.results.bindings.forEach(function (v) {
+                        var option = document.createElement('option');
+                        option.setAttribute('width', '70%');
+                        if (v.url !== undefined) {
+                            option.value = v.value.value;
+                            option.setAttribute('data-input-value', v.url.value);
+                        }
+                        else {
+                            option.value = v.value.value;
+                            option.setAttribute('data-input-value', v.value.value);
+                        }
+                        if (idataList !== null) {
+                            idataList.appendChild(option);
+                        }
+                    });
+                }
+            });
+        }
     }
+    
+    resultList = [studies, investigations]
+
+
     for (rl in resultList) {
         var service = encodeURI(
             SPARQL_ENDPOINT + resultList[rl] + '&format=json').replace(
@@ -98,36 +202,59 @@ function sparqlQuery() {
     $("#infoPanel").addClass('hidden');
     $("#results").addClass('hidden');
     $("#noResultPanel").addClass('hidden');
-    var SEARCH = document.getElementById('search').value;
+    var ISEARCH = document.getElementById('isearch').value;
+    var SSEARCH = document.getElementById('ssearch').value;
+    var ASEARCH = document.getElementById('asearch').value;
     var RSEARCH = document.getElementById('search-result').value;
-    if (SEARCH != '') {
-        var query = "SELECT DISTINCT ?pid ?meta ?investigation ?study ?sex " +
-            "?disease ?disease_iri ?method_iri ?sample FROM " +
-            "<http://127.0.0.1:3030/ds/data/" + USER + ">" +
-            "WHERE {" +
-            "?s <http://127.0.0.1:3030/ds/data?graph=" + USER +
-            "#pid> ?pid ." +
-            "?s <http://127.0.0.1:3030/ds/data?graph=" + USER +
-            "#meta> ?meta ." +
-            "?s <http://127.0.0.1:3030/ds/data?graph=" + USER +
-            "#investigation_id> ?investigation ." +
-            "?s <http://127.0.0.1:3030/ds/data?graph=" + USER +
-            "#group_id> ?study ." +
-            "?s <http://127.0.0.1:3030/ds/data?graph=" + USER +
-            "#sex> ?sex ." +
-            "?s <http://127.0.0.1:3030/ds/data?graph=" + USER +
-            "#sample_id> ?sample ." +
-            "?s <http://127.0.0.1:3030/ds/data?graph=" + USER +
-            "#disease> ?disease ." +
-            "?s <http://127.0.0.1:3030/ds/data?graph=" + USER +
-            "#disgenet_iri> ?disease_iri ." +
-            "?s <http://127.0.0.1:3030/ds/data?graph=" + USER +
-            "#edam_iri> ?method_iri ." +
-            "FILTER (CONTAINS(?sample, '" + SEARCH +
-            "') || regex(?disease, '" + SEARCH +
-            "', 'i') || regex(?study, '" + SEARCH +
-            "', 'i') || regex(?investigation, '" + SEARCH +
-            "', 'i'))} ORDER BY (?sample)";
+    if (ISEARCH != '' || SSEARCH != '' || ASEARCH != '') {
+        if(SPARQL_ENDPOINT.indexOf("seek") >= 0  || SPARQL_ENDPOINT.indexOf("127.0.0.1") >= 0){
+            var query = 
+                "PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> " +
+                "PREFIX dcterms: <http://purl.org/dc/terms/> " +
+                "PREFIX jerm: <http://www.mygrid.org.uk/ontology/JERMOntology#> " +
+                "SELECT ?investigations ?studies ?assays ?datafiles ?files WHERE {" +
+                "?i dcterms:title ?investigations . " +
+                "FILTER regex(?i, 'investigations', 'i') . " +
+                "?i jerm:hasPart ?studyid . " +
+                "FILTER regex(?studyid, 'studies', 'i') . " +
+                "?studyid dcterms:title ?studies . " +
+                "?studyid jerm:hasPart ?assayid . " +
+                "?assayid dcterms:title ?assays . " +
+                "?assayid jerm:hasPart ?files . " +
+                "?files dcterms:title ?datafiles . " +
+                "FILTER regex(?investigations, '" + ISEARCH + "', 'i') . " +
+                "FILTER regex(?studies, '" + SSEARCH + "', 'i') . " +
+                "FILTER regex(?assays, '" + ASEARCH + "', 'i')}";
+        } else {
+            var query = 
+                "SELECT DISTINCT ?pid ?meta ?investigation ?study ?sex " +
+                "?disease ?disease_iri ?method_iri ?sample FROM " +
+                "<http://127.0.0.1:3030/ds/data/" + USER + ">" +
+                "WHERE {" +
+                "?s <http://127.0.0.1:3030/ds/data?graph=" + USER +
+                "#pid> ?pid ." +
+                "?s <http://127.0.0.1:3030/ds/data?graph=" + USER +
+                "#meta> ?meta ." +
+                "?s <http://127.0.0.1:3030/ds/data?graph=" + USER +
+                "#investigation_id> ?investigation ." +
+                "?s <http://127.0.0.1:3030/ds/data?graph=" + USER +
+                "#group_id> ?study ." +
+                "?s <http://127.0.0.1:3030/ds/data?graph=" + USER +
+                "#sex> ?sex ." +
+                "?s <http://127.0.0.1:3030/ds/data?graph=" + USER +
+                "#sample_id> ?sample ." +
+                "?s <http://127.0.0.1:3030/ds/data?graph=" + USER +
+                "#disease> ?disease ." +
+                "?s <http://127.0.0.1:3030/ds/data?graph=" + USER +
+                "#disgenet_iri> ?disease_iri ." +
+                "?s <http://127.0.0.1:3030/ds/data?graph=" + USER +
+                "#edam_iri> ?method_iri ." +
+                "FILTER (CONTAINS(?sample, '" + ISEARCH +
+                "') || regex(?disease, '" + ISEARCH +
+                "', 'i') || regex(?study, '" + ISEARCH +
+                "', 'i') || regex(?investigation, '" + ISEARCH +
+                "', 'i'))} ORDER BY (?sample)";
+        }
     }
     if (RSEARCH != '') {
         var query = "SELECT DISTINCT (?s as ?id) ?resultid ?investigation " +
@@ -148,9 +275,24 @@ function sparqlQuery() {
             "#date> ?date ." + "FILTER (regex(?study, '" + RSEARCH +
             "', 'i') || regex(?investigation, '" + RSEARCH +
             "', 'i'))} ORDER BY DESC(?date)";
+        // var query = "PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> " +
+        //             "PREFIX dcterms: <http://purl.org/dc/terms/> " +
+        //             "PREFIX jerm: <http://www.mygrid.org.uk/ontology/JERMOntology#> " +
+        //             "SELECT ?investigations ?studies ?assays ?datafiles WHERE {" +
+        //             "?i dcterms:title ?investigations . " +
+        //             "FILTER regex(?i, 'investigations', 'i') . " +
+        //             "?i jerm:hasPart ?studyid . " +
+        //             "FILTER regex(?studyid, 'studies', 'i') . " +
+        //             "?studyid dcterms:title ?studies . " +
+        //             "?studyid jerm:hasPart ?assayid . " +
+        //             "?assayid dcterms:title ?assays . " +
+        //             "?assayid jerm:hasPart ?files . " +
+        //             "?files dcterms:title ?datafiles . " +
+        //             "FILTER regex(?investigations, '" + RSEARCH + "', 'i')}";
     }
+    
     var isValueMissing = false;
-    if (SEARCH === '' && RSEARCH === '') {
+    if (ISEARCH === '' && SSEARCH === '' && ASEARCH === '' && RSEARCH === '') {
         var errorMessage = ("<strong>Input error : " +
             "</strong>Please enter a value ")
         isValueMissing = true;
@@ -168,7 +310,9 @@ function sparqlQuery() {
             'thanks for being patient');
         $.ajax({
             url: service, dataType: 'jsonp', success: function (result) {
-                document.getElementById('search').value = '';
+                document.getElementById('isearch').value = '';
+                document.getElementById('ssearch').value = '';
+                document.getElementById('asearch').value = '';
                 document.getElementById('search-result').value = '';
                 console.log(result);
                 fillTable(result);
@@ -543,6 +687,37 @@ function rerun_analysis() {
         data: {
             'workflowid': wid, 'inputs': inputs, 'urls': jsonURLS,
             'resultid': resultid
+        },
+        success: function (data) {
+            document.getElementById('running').style.display = "none";
+            document.getElementById('finished').style.display = "block";
+            setTimeout(refresh, 5000);
+        },
+        error: function (data) {
+            document.getElementById('error').style.display = "block";
+            setTimeout(refresh, 5000);
+        },
+    });
+}
+// Rerun the analysis with information from the results
+function import_history() {
+    tar = document.getElementById("tar").innerText;
+    resultid = document.getElementById("title").innerText;
+    // var urls = new Array;
+    // for (i = 0; i <= (inputs.length - 1); i++) {
+    //     urls.push(
+    //         resultid.replace(" ", "") + "/" +
+    //         inputs[i].replace(" ", "").replace("\n", "").replace(
+    //             "'", "").replace("[", "").replace("]", "").replace("'", "")
+    //     )
+    // }
+    // var jsonURLS = JSON.stringify(urls);
+    document.getElementById('running').style.display = "block";
+    $.ajax({
+        type: 'POST',
+        url: "import",
+        data: {
+            'tar': tar, 'resultid': resultid
         },
         success: function (data) {
             document.getElementById('running').style.display = "none";

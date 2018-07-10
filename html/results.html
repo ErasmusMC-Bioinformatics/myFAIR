@@ -49,9 +49,9 @@
         <h3>Analysis Details</h3>
         <p>
             <table class="tblresult" id="analysis-info">
-                <th>Galaxy workflow file</th>
-                <th>workflowid</th>
-                <th></th>
+                <th>Galaxy file</th>
+                <th>ID (workflow only)</th>
+                <th>Import (history) / Download (workflow)</th>
                 {% if outputs %}
                     {% for output in outputs %}
                         {% if ".ga" in output %}
@@ -65,6 +65,13 @@
                                     </a>
                                 </td>
                             </tr>
+                        {% endif %}
+                        {% if ".tar" in output %}
+                        <tr>
+                            <td id="tar">{{output}}</td>
+                            <td>&nbsp;</td>
+                            <td><button class="button" name="rerun" onclick="import_history()">Import History</button></td>
+                        </tr>
                         {% endif %}
                     {% endfor %}
                 {% else %}

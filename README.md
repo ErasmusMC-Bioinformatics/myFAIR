@@ -13,15 +13,17 @@ The vcf file can be found [here](https://bioinf-galaxian.erasmusmc.nl/galaxy/lib
 For the GEO data matrix option there is a workflow available that is using DEseq2. You can follow the steps to filter the data matrix and metadata based on selected samples and send them to Galaxy. You can find these steps under the "Using GEO files" header.
 
 # <a name="dependencies"></a>Dependencies
-* Python 2.7.12
-* Django 1.10.2, 1.10.3 or 1.10.4
-* Bioblend 0.8.1
+* Python 3.5 or higher
+* Django 2.0.1 or higher
+* Bioblend 0.8.1 or hger
 * rdflib
+* lftp 4.6.3a
 * Java SE Development Kit 8u112
 * Apache Jena Fuseki 2.4.1
-* Galaxy 16.07 or an existing Galaxy server with the following tools available:
+* Galaxy 16.07 (or higher) or an existing Galaxy server with the following tools available:
     * GEMINI (load, autosomal recessive/dominant, de novo, comp hets)
     * Add Column, Strip Header and File Concatenate (all can be found under the name file_manipulation in the Galaxy tool shed)
+    * The Galaxy server should allow an FTP connection in order for myFAIR to send the data.
 
 # <a name="installation-instructions"></a> Installation Instructions
 **Install myFAIR on your existing VM**
@@ -60,16 +62,15 @@ In order to run the myFAIR analysis you need to follow these steps:
 2. Open or download a browser (Firefox or Chrome recommended).
 3. Go to the usegalaxy page: https://usegalaxy.org/
 4. Login to your account or create a new account by clicking "User" and then clicking "Register".
-5. Get the API Key from your account. If you do not have an API Key visible for you, create one.
-6. Visit the B2DROP or page and create a folder where you can put your datafiles. You can also use the bioinf-galaxian Owncloud if you have an account.
+5. Visit the B2DROP or page and create a folder where you can put your datafiles. You can also use the bioinf-galaxian Owncloud if you have an account.
     * If you do not have a B2DROP account please visit: https://b2drop.eudat.eu/index.php/login and click register.
     * If you have a B2DROP account, please log in and create a new folder with the name of your investigation.
     * Add a folder with the name of your study.
     * Add the .vcf and .ped file to the study folder.
     If you are using the GEO data matrix, please put that file in a folder.
-7. Visit the myFAIR analysis page on 127.0.0.1:8080 (if selected other port please make sure the url is correct)
-8. Login using your Galaxy API Key and your B2DROP or bioinf-galaxian credentials.
-9. Upload files to the Fuseki server:
+6. Visit the myFAIR analysis page on 127.0.0.1:8080 (if selected other port please make sure the url is correct)
+7. Login using your Galaxy credentials (username/email and password) and your B2DROP or bioinf-galaxian credentials.
+8. Upload files to the Fuseki server:
     * Click on the "Index you data" link.
     * Select the investigation folder and click "See studies".
     * Select the study folder where your datafiles are located and click "See files".
@@ -80,7 +81,7 @@ In order to run the myFAIR analysis you need to follow these steps:
     * If you are using the GEO data matrix, please choose the "datafile" option for all data matrix files you want to upload. If you do not have a metadata file, click "Store Triples". If you already have a metadata file please select "metadata" for that file and then click "Store Triples".
     * You will be send back to the homepage.
 
-10. Find your files or samples:
+9. Find your files or samples:
 
     a. Find your files using a sample name:
     *   Enter a sample name in the Find Data textbox.
@@ -94,16 +95,16 @@ In order to run the myFAIR analysis you need to follow these steps:
     *   Enter the name of the disease in the Find data textbox.
     *   Click on the "Search >>" button to start searching for your files.
 
-11. Send the files to Galaxy and run a workflow:
+10. Send the files to Galaxy and run a workflow:
     *   After finding your files, select the "Training_gemini_vcfanalysis_11112016" workflow by clicking on the dropdown menu.
     *   Select the file you want to send and choose the options you want to use.
     *   Enter a new history name or leave empty to automatically generate a new history name.
-    *   Then click on the "send to galaxy" button to start sending the files to a new history and running the selected workflow.
-12. A cat will appear to let you know that the files are being send to Galaxy and that the workflow is running (if you have selected a workflow).
+    *   Then click on the "send to galaxy" button to start sending the files to the Galaxy ftp folder and import the files in a new history. After importing the files run the selected workflow.
+11. A cat will appear to let you know that the files are being send to Galaxy and that the workflow is running (if you have selected a workflow).
 A checkmark will appear when the files are send to galaxy and the workflow is finished (if you selected a workflow).
 If something went wrong (workflow failed, not selected a file or you get timed-out) an error message will appear.
-13. If you do not want to use a workflow you can choose "Use Galaxy" to only send the datafiles to Galaxy and work with the files directly in Galaxy.
-14. You can visit the Galaxy page to see if the workflow is running by going to https://usegalaxy.org/ or go to the next step.
+12. If you do not want to use a workflow you can choose "Use Galaxy" to only send the datafiles to Galaxy and work with the files directly in Galaxy.
+13. You can visit the Galaxy page to see if the workflow is running by going to https://usegalaxy.org/ or go to the next step.
 
 # <a name="using-geo"></a> Using GEO files
 To split GEO files and send only specific samples to a new Galaxy history follow these steps:

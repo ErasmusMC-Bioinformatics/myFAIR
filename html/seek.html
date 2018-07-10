@@ -1,0 +1,126 @@
+x{% extends 'base.html' %}
+{% load staticfiles %}
+{% block head %}
+<script type="text/javascript" charset="utf-8">
+    function GetInvestigations() {
+        document.forms['seek-data-upload'].submit()
+    }
+    function UploadSeek() {
+        document.forms['seek-data-upload'].submit()
+    }
+</script>
+{% endblock %}
+{% block content %}
+<div class="navbar-header">
+    <div class="container">
+        <div id="menu">
+            <ul id="menubar">
+                <li><a href="{% url 'index' %}" target="_self"><img src="{% static 'img/logo-erasmus.png' %}" alt="" class="img-thumbnail" width="81.5 height="31.8"></a></li>
+                <li><span class="menu-text" style="margin-left:10px"><a href="{% url 'triples' %}">Index your data</a></span></li>
+                <li><span class="menu-text" style="margin-left:10px"><a href="{% url 'seek' %}">SEEK API TEST</a></span></li>
+                <li><span class="menu-text"><a href="{% url 'delete' %}">Delete indexed data</a></span></li>
+                <li><span class="menu-text"><a href="{% url 'logout' %}">Logout</a></span></li>
+            </ul>
+        </div>
+    </div>
+</div>
+<div class="container" style="margin-top:100px">
+    <form action="{% url 'seek' %}" method="POST" name="seek-data-upload" enctype=multipart/form-data >
+        <table id="tbl-files">
+            <thead>
+                <th></th>
+                <th></th>
+                <th></th>
+            </thead>
+            <tr>
+                <td><b><i>Select a project</i></b></td>
+                <td>
+                    <input type="hidden" id="proj" name="proj" value="{{proj|add:","|add:proj_name}}">
+                    <select id="projects" name="projects" class="select-folder" onchange="GetInvestigations()">
+                        <optgroup label="available projects:">
+                            <option id="proj" disabled selected value="{{ proj }}">{{ proj_name }}</option>
+                            {% for pid, project in projects.items %}
+                                <option value="{{ pid|add:","|add:project }}">{{ project }}</option>
+                            {% endfor %}
+                        </optgroup>
+                    </select>
+                </td>
+                <!-- <td><button id="index_buttons" onclick="GetInvestigations()">Get investigations</button></td> -->
+            </tr>
+            {% if investigations %}
+            <tr>
+                <td><b><i>Select an investigation</i></b></td>
+                <td>
+                    <input type="hidden" id="inv" name="inv" value="{{inv|add:","|add:inv_name}}">
+                    <select id="investigations" name="investigations" class="select-folder" onchange="GetInvestigations()">
+                        <optgroup label="available investiagtions:">
+                            <option id="inv" disabled selected value="{{ inv }}">{{ inv_name }}</option>
+                            {% for iid, investigation in investigations.items %}
+                                <option value="{{ iid|add:","|add:investigation }}">{{ investigation }}</option>
+                            {% endfor %}
+                        </optgroup>
+                    </select>
+                </td>
+                <!-- <td><button id="index_buttons" onclick="GetInvestigations()">Get studies</button></td> -->
+            </tr>
+            {% endif %}
+            {% if studies %}
+            <tr>
+                <td><b><i>Select a study</i></b></td>
+                <td>
+                    <input type="hidden" id="stu" name="stu" value="{{stu|add:","|add:stu_name}}">
+                    <select id="studies" name="studies" class="select-folder" onchange="GetInvestigations()">
+                        <option id="stu" disabled selected value="{{ stu }}">{{ stu_name }}</option>
+                        <optgroup label="available studies:">
+                            {% for sid, study in studies.items %}
+                                <option value="{{ sid|add:","|add:study }}">{{ study }}</option>
+                            {% endfor %}
+                        </optgroup>
+                    </select>
+                </td>
+                <!-- <td><button id="index_buttons" onclick="GetInvestigations()">Get assays</button></td> -->
+                
+            </tr>
+            {% endif %}
+            {% if assays %}
+            <tr>
+                <td><b><i>Select an assay</i></b></td>
+                <td>
+                    <input type="hidden" id="as" name="as" value="{{as|add:","|add:as_name}}">
+                    <select id="assays" name="assays" class="select-folder" onchange="GetInvestigations()">
+                        <optgroup label="available assays:">
+                            <option id="as" disabled selected value="{{ as }}">{{ as_name }}</option>
+                            {% for aid, assay in assays.items %}
+                                <option value="{{ aid|add:","|add:assay }}">{{ assay }}</option>
+                            {% endfor %}
+                        </optgroup>
+                    </select>
+                </td>
+                <!-- <td><button id="index_buttons" onclick="GetInvestigations()">Get data files</button></td> -->
+            </tr>
+            {% endif %}
+            {% if as %}
+            <tr>
+                <td><b><i>Select file to upload</i></b></td>
+                <td><input type="file" id="uploadfiles" name="uploadfiles" multiple="multiple" /></td>
+            </tr>
+    </form>
+    <tr>
+        <td><button id="index_buttons" onclick="UploadSeek()">Upload File</button></td>
+    </tr>
+    {% endif %}
+    <br />
+    </table>
+</div>
+<br />
+<!-- <iframe id="webpage" name="webpage" height="1080px" width="1920px" border="0"></iframe> -->
+<div id="footer">
+    <div class="container">
+        <br />
+            <a href="http://localhost:3000" target="webpage">SEEK</a>
+            <a href="http://bioinf-galaxian.erasmusmc.nl" target="webpage">Galaxy</a>
+        <p class="muted credit">
+        </p>
+    </div>
+</div>
+{% endblock %}

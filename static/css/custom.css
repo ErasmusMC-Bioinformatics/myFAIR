@@ -107,9 +107,11 @@ body select {
 }
 .table {
     width: 100%;
-    table-layout: auto;
+    /* table-layout: auto; */
+    table-layout: fixed;
     font-size: 8pt;
     box-sizing: none;
+    word-wrap: normal;
 }
 .table a {
     cursor: pointer;
@@ -176,7 +178,6 @@ fieldset[disabled] .btn-process.active {
 }
 #select, #show_results {
     width: 100%;
-    align: center;
     text-align: center;
 }
 .select-workflow {

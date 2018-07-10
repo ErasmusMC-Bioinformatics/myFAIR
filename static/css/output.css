@@ -43,9 +43,9 @@ p {
     text-align: center;
     text-decoration: none;
     display: inline-block;
-    font-size: 9pt;
-    word-break: normal;
-    width: 100%;
+    font-size: 8pt;
+    word-break: break-all;
+    width: 99%;
     cursor: pointer;
 }
 .button:hover {
@@ -81,4 +81,5 @@ p {
 }
 .tblresult {
     border: 1px solid #e7f3ff;
+    table-layout: fixed;
 }

@@ -8,6 +8,10 @@ function showHisLoading() {
     document.history.submit();
     return true
 }
+function getStudies(){
+    document.getElementById('studyload').style.display = "block";
+    document.studies.submit();
+}
 </script>
 {% endblock %}
 {% block content %}
@@ -17,6 +21,7 @@ function showHisLoading() {
             <ul id="menubar">
                 <li><a href="{% url 'index' %}" target="_self"><img src="{% static 'img/logo-erasmus.png' %}" alt="" class="img-thumbnail" width="81.5 height="31.8"></a></li>
                 <li><span class="menu-text" style="margin-left:10px"><a href="{% url 'triples' %}">Index your data</a></span></li>
+                <li><span class="menu-text" style="margin-left:10px"><a href="{% url 'seek' %}">SEEK API TEST</a></span></li>
                 <li><span class="menu-text"><a href="{% url 'delete' %}">Delete indexed data</a></span></li>
                 <li><span class="menu-text"><a href="{% url 'logout' %}">Logout</a></span></li>
             </ul>
@@ -36,7 +41,7 @@ function showHisLoading() {
     <span class="info" style="float:right">
         Storage Location:
         {% if "http://" in storage or "https://" in storage %}
-            <a href="{{storage}}" target="_blank">{{storage}}</a> <br />
+            <a href="{{storage}}" target="_blank"><span id="storagename">{{storage}}</span></a> <br />
         {% else %}
             {{storage}} <br />
         {% endif %}
@@ -54,8 +59,23 @@ function showHisLoading() {
                 </div>
                 <div class="panel-body">
                     <fieldset>
-                        <input type="text" class="form-control" name="search" id="search" list="searchDataList" placeholder="Enter sample name, disease, study name or investigation name">
-                        <datalist id="searchDataList"></datalist>
+                        {% if "seek" in storage or "127.0.0.1" in storage %}
+                            <b>Investigation</b>
+                        {% endif %}
+                        <input type="text" class="form-control" name="isearch" id="isearch" list="isearchDataList" placeholder="Enter investigation name">
+                        <datalist id="isearchDataList"></datalist>
+                        {% if "seek" in storage or "127.0.0.1" in storage %}
+                            <br>
+                            <b>Study</b>
+                        {% endif %}
+                        <input style="display: none" type="text" class="form-control" name="ssearch" id="ssearch" list="ssearchDataList" placeholder="Enter study name">
+                        {% if "seek" in storage or "127.0.0.1" in storage %}
+                            <br>
+                            <b>Assay</b>
+                        {% endif %}
+                        <input style="display: none" type="text" class="form-control" name="asearch" id="asearch" list="asearchDataList" placeholder="Enter assay name">
+                        <datalist id="ssearchDataList"></datalist>
+                        <datalist id="asearchDataList"></datalist>
                     </fieldset>
                 </div>
             </div>
@@ -175,7 +195,8 @@ function showHisLoading() {
                         </tr>
                         <tr>
                             <td>
-                                <button id="index_buttons" style="width: 100%;" onclick="document.studies.submit()">Get studies</button>
+                                <!-- <button id="index_buttons" style="width: 100%;" onclick="document.studies.submit()">Get studies</button> -->
+                                <button id="index_buttons" style="width: 100%;" onclick="getStudies()">Get studies</button>
                             </td>
                         </tr>
                     </form>
@@ -200,6 +221,14 @@ function showHisLoading() {
                                 </select>
                             </td>
                         </tr>
+                        {% else %}
+                        <tr>
+                            <td>
+                                <div id="studyload" style="display: none">
+                                    <img id="loadstudy" src="{% static 'img/wait.gif' %}" width="10%" height="10%">
+                                </div>
+                            </td>
+                        </tr>
                         {% endif %}
                         <tr>
                             <td>
@@ -207,13 +236,6 @@ function showHisLoading() {
                             </td>
                         </tr>
                         <tr>
-                            <!-- <form action="history" method="post" name="history">
-                                <input type="hidden" name="api" id="api" value={{api}}>
-                                <input type="hidden" name="username" id="username" value={{username}}>
-                                <input type="hidden" name="password" id="password" value={{password}}>
-                                <input type="hidden" name="storage" id="storage" value={{storage}}>
-                                <input type="hidden" name="server" id="server" value={{server}}>
-                                <input type="hidden" name="inv" id="inv" value={{inv}}> -->
                             <td>
                                 <p>Select the history you want to send to ownCloud.</p>
                                 <select id="history" name="history" class="select-workflow">
@@ -241,4 +263,13 @@ function showHisLoading() {
     <img id="loadingImage" src="{% static 'img/loading.gif' %}" width="25%" height="25%">
 </div>
 {% endblock %}
+<br />
+<div id="footer">
+    <div class="container">
+        <br />
+            <a href="http://seek.erasmusmc.nl" target="#seek">SEEK</a>
+        <p class="muted credit">
+        </p>
+    </div>
+</div>
 {% endblock %}
