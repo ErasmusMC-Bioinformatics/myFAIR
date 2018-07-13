@@ -17,7 +17,7 @@ x{% extends 'base.html' %}
             <ul id="menubar">
                 <li><a href="{% url 'index' %}" target="_self"><img src="{% static 'img/logo-erasmus.png' %}" alt="" class="img-thumbnail" width="81.5 height="31.8"></a></li>
                 <li><span class="menu-text" style="margin-left:10px"><a href="{% url 'triples' %}">Index your data</a></span></li>
-                <li><span class="menu-text" style="margin-left:10px"><a href="{% url 'seek' %}">SEEK API TEST</a></span></li>
+                <li><span class="menu-text" style="margin-left:10px"><a href="{% url 'seek' %}">Upload files to SEEK</a></span></li>
                 <li><span class="menu-text"><a href="{% url 'delete' %}">Delete indexed data</a></span></li>
                 <li><span class="menu-text"><a href="{% url 'logout' %}">Logout</a></span></li>
             </ul>
@@ -96,10 +96,17 @@ x{% extends 'base.html' %}
                         </optgroup>
                     </select>
                 </td>
-                <!-- <td><button id="index_buttons" onclick="GetInvestigations()">Get data files</button></td> -->
             </tr>
             {% endif %}
             {% if as %}
+            <tr>
+                <td><b><i>Enter a title</i></b></td>
+                <td><input type="text" id="title" name="title" /></td>
+            </tr>
+            <tr>
+                <td><b><i>Enter a description</i></b></td>
+                <td><textarea id="description" name="description"></textarea></td>
+            </tr>
             <tr>
                 <td><b><i>Select file to upload</i></b></td>
                 <td><input type="file" id="uploadfiles" name="uploadfiles" multiple="multiple" /></td>
@@ -117,8 +124,7 @@ x{% extends 'base.html' %}
 <div id="footer">
     <div class="container">
         <br />
-            <a href="http://localhost:3000" target="webpage">SEEK</a>
-            <a href="http://bioinf-galaxian.erasmusmc.nl" target="webpage">Galaxy</a>
+        <br />
         <p class="muted credit">
         </p>
     </div>

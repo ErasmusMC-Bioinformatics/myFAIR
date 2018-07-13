@@ -6,12 +6,15 @@ import re
 import subprocess
 import time
 import uuid
+import tempfile
 
 from subprocess import call
 from subprocess import check_call
 from time import strftime, gmtime
 from bioblend.galaxy import GalaxyInstance
 from bioblend.galaxy.client import ConnectionError
+from django.conf import settings
+from django.core.files.storage import default_storage
 from django.shortcuts import render_to_response, render, HttpResponseRedirect, redirect
 from django.urls import reverse
 from django.views.decorators.csrf import csrf_exempt
@@ -193,12 +196,9 @@ def index(request):
 
 
 @csrf_exempt
-def seekupload(request):
+def seekupload(username, password, storage, title, file, filename,
+               content_type, userid, projectid, assayid, description):
     """Upload data file to SEEK server using the selected ISA IDs.
-    TODO: Link this function to the seek function where you can select ISA.
-    TODO: Create data file instance in the selected SEEK assay.
-    TODO: Get the data_file_id and content_blob_id from the instance.
-    TODO: Get the uploaded files and send the files to the data file instance.
     
     Arguments:
         request {[type]} -- [description]
@@ -206,75 +206,81 @@ def seekupload(request):
     Returns:
         [type] -- [description]
     """
-    # title = ""
-    # description = ""
-    # projectid = 3
-    # assayid = 1
-    # userid = 1
-    # data_file_id = 0
-    # content_blob_id = 0
-    # content_type = "application/pdf"
-    # files = request.POST.get("uploadfiles")
-    # filename = ""
-    # data_instance_query = (
-    #     "curl -u " +
-    #     request.session.get("username") + ":" +
-    #     request.session.get("password") +
-    #     " -X POST \"" + request.session.get("storage") +
-    #     "/data_files\" -H \"accept: application/json\" "
-    #     "-H \"Content-Type: application/json\" "
-    #     "-d \"{ \"data\": { \"type\": \"data_files\", \"attributes\": "
-    #     "{ \"title\": \"" + title + "\", \"description\": \"" + description +
-    #     "\", \"tags\": [ \"API\", \"Data\" ], "
-    #     "\"license\": \"CC-BY-4.0\", \"content_blobs\": [ "
-    #     "{ \"original_filename\": \"" + filename +
-    #     "\", \"content_type\": \"" + content_type +
-    #     "\" } ], \"policy\": { \"access\": \"download\", \"permissions\": [ "
-    #     "{ \"resource\": { \"id\": \"" + projectid +
-    #     "\", \"type\": \"projects\" }, \"access\": \"edit\" } ] } }, "
-    #     "\"relationships\": { \"creators\": "
-    #     "{ \"data\": [ { \"id\": \"" + userid +
-    #     "\", \"type\": \"people\" } ] }, \"projects\": "
-    #     "{ \"data\": [ { \"id\": \"" + projectid +
-    #     "\", \"type\": \"projects\" } ] }, \"assays\": "
-    #     "{ \"data\": [ { \"id\": \"" + assayid +
-    #     "\", \"type\": \"assays\" } ] } } }}\""
-    # )
-    seek_data_ids = []
+    data_instance_query = (
+        "curl -u " + username + ":" + password +
+        " -X POST \"" + storage + "/data_files\" "
+        "-H \"accept: application/json\" "
+        "-H \"Content-Type: application/json\" "
+        "-d \"{ \\\"data\\\": { \\\"type\\\": \\\"data_files\\\", "
+        "\\\"attributes\\\": "
+        "{ \\\"title\\\": \\\"" + title + "\\\", "
+        "\\\"description\\\": \\\"" + description + "\\\", "
+        "\\\"license\\\": \\\"CC-BY-4.0\\\", "
+        "\\\"content_blobs\\\": [ { "
+        "\\\"original_filename\\\": \\\"" + filename + "\\\", "
+        "\\\"content_type\\\": \\\"" + content_type + "\\\" } ], "
+        "\\\"policy\\\": "
+        "{ \\\"access\\\": \\\"download\\\", "
+        "\\\"permissions\\\": [ "
+        "{ \\\"resource\\\": "
+        "{ \\\"id\\\": \\\"" + str(projectid) + "\\\", "
+        "\\\"type\\\": \\\"projects\\\" }, "
+        "\\\"access\\\": \\\"edit\\\" } ] } }, "
+        "\\\"relationships\\\": "
+        "{ \\\"creators\\\": "
+        "{ \\\"data\\\": [ "
+        "{ \\\"id\\\": \\\"" + str(userid) + "\\\", "
+        "\\\"type\\\": \\\"people\\\" } ] }, "
+        "\\\"projects\\\": "
+        "{ \\\"data\\\": [ "
+        "{ \\\"id\\\": \\\"" + str(projectid) + "\\\", "
+        "\\\"type\\\": \\\"projects\\\" } ] }, "
+        "\\\"assays\\\": "
+        "{ \\\"data\\\": [ "
+        "{ \\\"id\\\": \\\"" + str(assayid) + "\\\", "
+        "\\\"type\\\": \\\"assays\\\" } ] } } }} \""
+    )
+    call([data_instance_query], shell=True)
+    seek_data_ids = []  # List with data_file ids
     get_data_files = (
         "curl -X GET \"" +
-        request.session.get("storage") + "/data_files\" "
+        storage + "/data_files\" "
         "-H \"accept: application/json\""
     )
     all_data_files = subprocess.Popen(
         [get_data_files], stdout=subprocess.PIPE, shell=True).communicate()[0].decode()
     data_files = json.loads(all_data_files)
     for df in range(0, len(data_files["data"])):
-        seek_data_ids.append(data_files["data"][df]["id"])
-    for d in range(0, len(data_files["data"])):
-        if data_files["data"][d]["id"] == max(seek_data_ids):
-            print(data_files["data"][d]["attributes"]["title"])
-    # data_file_query = (
-    #     "curl -u " +
-    #     request.session.get("username") + ":" +
-    #     request.session.get("passsword") +
-    #     " -X PUT \"" + request.session.get("storage") + "/data_files/" +
-    #     str(data_file_id) + "/content_blobs/" + str(content_blob_id) + "\" "
-    #     "-H \"accept: */*\" -H \"Content-Type: application/octet-stream -T " +
-    #     files
-    # )
-    # query = ("curl -X PUT "
-    #          "\"http://127.0.0.1:3000/data_files/1/content_blobs/2\" "
-    #          "-H \"accept: */*\" -H \"Content-Type: application/octet-stream\""
-    #          " -d \"" + files + "\"")
-    # call([query], shell=True)
+        seek_data_ids.append(int(data_files["data"][df]["id"]))
+    get_content_blob = (
+        "curl -X GET \"" +
+        storage + "/data_files/" + str(max(seek_data_ids)) +
+        "\" -H \"accept: application/json\""
+    )
+    json_blob = subprocess.Popen(
+        [get_content_blob], stdout=subprocess.PIPE, shell=True).communicate()[0].decode()
+    content_blob = json.loads(json_blob)
+    content_blob_url = content_blob["data"]["attributes"]["content_blobs"][0]["link"]
+    data_file_query = (
+        "curl -u " +
+        username + ":" + password +
+        " -X PUT \"" + content_blob_url + "\" "
+        "-H \"accept: */*\" -H \"Content-Type: application/octet-stream\" -T " +
+        file
+    )
+    call([data_file_query], shell=True)
+    call(["rm", "-r", file])
     return HttpResponseRedirect(reverse("index"))
 
 
 @csrf_exempt
 def seek(request):
-    """Testing the SEEK API
-    
+    """Getting the investigations, studies and assays based on the 
+    information given by the user in the upload form. The user selects
+    the project, investigation, study and assay. After selecting the assay
+    the user enter a title and description an can upload a data file to the
+    selected assay.
+
     Arguments:
         request -- Requesting information to test the SEEK API.
     
@@ -305,6 +311,38 @@ def seek(request):
         projects[test_projects["data"][x]["id"]
                  ] = test_projects["data"][x]["attributes"]["title"]
     if request.method == 'POST':
+        if request.FILES.get('uploadfiles'):
+            upload_dir = (
+                "tmp" +
+                hashlib.md5(request.session.get(
+                    'username').encode('utf-8')).hexdigest()
+            )
+            upload_full_path = os.path.join(settings.MEDIA_ROOT, upload_dir)
+            content_type = request.FILES['uploadfiles'].content_type
+            if not os.path.exists(upload_full_path):
+                os.makedirs(upload_full_path)
+
+            upload = request.FILES["uploadfiles"]
+            while os.path.exists(os.path.join(upload_full_path, upload.name)):
+                upload.name = '_' + upload.name
+            dest = open(os.path.join(upload_full_path, upload.name), 'wb')
+            for chunk in upload.chunks():
+                dest.write(chunk)
+            dest.close()
+            seekupload(
+                request.session.get('username'),
+                request.session.get('password'),
+                request.session.get('storage'),
+                request.POST.get('title'),
+                os.path.join(upload_full_path, upload.name),
+                upload.name,
+                content_type,
+                1,
+                request.POST.get("proj").split(',')[0],
+                request.POST.get("as").split(',')[0],
+                request.POST.get('description')
+            )
+            call(["rm", "-r", upload_full_path])
         if request.POST.get("projects") is not None:
             selected_project = request.POST.get("projects").split(',')[0]
             selected_project_name = request.POST.get("projects").split(',')[1]
@@ -387,7 +425,6 @@ def seek(request):
                     [assay_search_query], stdout=subprocess.PIPE, shell=True).communicate()[0].decode()
                 found_assays = json.loads(res_assays)
                 assay_names[assay_id] = found_assays["data"]["attributes"]["title"]
-        print(request.POST.get('uploadfiles'))
     return render(request, "seek.html", context={'projects': projects,
                                                  'investigations': inv_names,
                                                  'studies': study_names,
