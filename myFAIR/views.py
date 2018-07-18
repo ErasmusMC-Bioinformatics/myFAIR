@@ -201,10 +201,7 @@ def seekupload(username, password, storage, title, file, filename,
     """Upload data file to SEEK server using the selected ISA IDs.
     
     Arguments:
-        request {[type]} -- [description]
-    
-    Returns:
-        [type] -- [description]
+        request -- Getting information to  upload data files to the SEEK server
     """
     data_instance_query = (
         "curl -u " + username + ":" + password +
@@ -273,6 +270,103 @@ def seekupload(username, password, storage, title, file, filename,
     return HttpResponseRedirect(reverse("index"))
 
 
+def create_study(username, password, server, userid, projectid,
+                 investigationid, title, description, studyname):
+    """Creates a new study in SEEK.
+
+    Arguments:
+        username {str} -- SEEK Login name
+        password {str} -- SEEK password
+        server {str} -- SEEK server URL
+        userid {int} -- Creator ID in SEEK
+        projectid {int} -- Selected SEEK project ID.
+        investigationid {int} -- Selected SEEK investigation ID.
+        title {str} -- Title entered when creating a new assay.
+        description {str} -- Description entered when creating a new assay.
+        studyname {str} -- The name of the new study.
+    """
+    study_creation_query = (
+        "curl -u " + username + ":" + password +
+        " -X POST \"" + server + "/studies\" "
+        "-H \"accept: application/json\" "
+        "-H \"Content-Type: application/json\" "
+        "-d \"{ \\\"data\\\": "
+        "{ \\\"type\\\": \\\"studies\\\", "
+        "\\\"attributes\\\": "
+        "{ \\\"title\\\": \\\"" + title + "\\\", "
+        "\\\"description\\\": \\\"" + description + "\\\", "
+        "\\\"person_responsible_id\\\": \\\"" + str(userid) + "\\\", "
+        "\\\"policy\\\": "
+        "{ \\\"access\\\": \\\"download\\\", "
+        "\\\"permissions\\\": [ { "
+        "\\\"resource\\\": "
+        "{ \\\"id\\\": \\\"" + str(projectid) + "\\\", "
+        "\\\"type\\\": \\\"projects\\\" }, "
+        "\\\"access\\\": \\\"view\\\" } ] } }, "
+        "\\\"relationships\\\": "
+        "{ \\\"investigation\\\": "
+        "{ \\\"data\\\": "
+        "{ \\\"id\\\": \\\"" + str(investigationid) + "\\\", "
+        "\\\"type\\\": \\\"investigations\\\" } }, "
+        "\\\"creators\\\": "
+        "{ \\\"data\\\": [ { "
+        "\\\"id\\\": \\\"" + str(userid) + "\\\", "
+        "\\\"type\\\": \\\"people\\\" } ] } } }}\""
+    )
+    call([study_creation_query], shell=True)
+
+
+def create_assay(username, password, server, userid, projectid, studyid,
+                 title, description, assay_type, technology_type, assayname):
+    """Creates a new assay in SEEK.
+    
+    Arguments:
+        username {str} -- SEEK Login name
+        password {str} -- SEEK password
+        server {str} -- SEEK server URL
+        userid {int} -- Creator ID in SEEK
+        projectid {int} -- Selected SEEK project ID.
+        studyid {int} -- Selected SEEK study ID.
+        title {str} -- Title entered when creating a new assay.
+        description {str} -- Description entered when creating a new assay.
+        assay_type {str} -- The selected assay type when creating a new assay.
+        technology_type {str} -- The selected technology type 
+        when creating a new assay.
+        assayname {str} -- The name of the new assay.
+    """
+    assay_creation_query = (
+        "curl -u " + username + ":" + password +
+        " -X POST \"" + server + "/assays\" "
+        "-H \"accept: application/json\" "
+        "-H \"Content-Type: application/json\" "
+        "-d \"{ \\\"data\\\": "
+        "{ \\\"type\\\": \\\"assays\\\", "
+        "\\\"attributes\\\": "
+        "{ \\\"title\\\": \\\"" + title + "\\\", "
+        "\\\"assay_class\\\": { \\\"key\\\": \\\"EXP\\\" }, "
+        "\\\"assay_type\\\": { \\\"uri\\\": \\\"" + assay_type + "\\\" }, "
+        "\\\"technology_type\\\": { \\\"uri\\\": \\\"" + technology_type + "\\\" }, "
+        "\\\"description\\\": \\\"" + description + "\\\", "
+        "\\\"policy\\\": "
+        "{ \\\"access\\\": \\\"download\\\", "
+        "\\\"permissions\\\": [ { "
+        "\\\"resource\\\": "
+        "{ \\\"id\\\": \\\"" + str(projectid) +"\\\", "
+        "\\\"type\\\": \\\"projects\\\" }, "
+        "\\\"access\\\": \\\"view\\\" } ] } }, "
+        "\\\"relationships\\\": "
+        "{ \\\"study\\\": "
+        "{ \\\"data\\\": "
+        "{ \\\"id\\\": \\\"" + str(studyid) +"\\\", "
+        "\\\"type\\\": \\\"studies\\\" } }, "
+        "\\\"creators\\\": "
+        "{ \\\"data\\\": [ { "
+        "\\\"id\\\": \\\"" + str(userid) + "\\\", "
+        "\\\"type\\\": \\\"people\\\" } ] } } }}\""
+    )
+    call([assay_creation_query], shell=True)
+
+
 @csrf_exempt
 def seek(request):
     """Getting the investigations, studies and assays based on the 
@@ -282,10 +376,7 @@ def seek(request):
     selected assay.
 
     Arguments:
-        request -- Requesting information to test the SEEK API.
-    
-    Returns:
-        [type] -- [description]
+        request -- Getting the information needed to search the SEEK ISA structure.
     """
     projects = {}
     selected_project = ""
@@ -300,6 +391,21 @@ def seek(request):
     study_names = {}
     assay_names = {}
     searches = {}
+    cns = ""
+    cna = ""
+    user_dict = {}
+    get_userid_query = (
+        "curl -X GET \"" +
+        request.session.get('storage') +
+        "/people\" -H \"accept: application/json\""
+    )
+    user_ids = subprocess.Popen(
+        [get_userid_query],
+        stdout=subprocess.PIPE,
+        shell=True).communicate()[0].decode()
+    json_user_ids= json.loads(user_ids)
+    for usr in range(0, len(json_user_ids["data"])):
+        user_dict[json_user_ids["data"][usr]["id"]] = json_user_ids["data"][usr]["attributes"]["title"]
     get_projects = "curl -s -X GET \"" + \
         request.session.get("storage") + \
         "/projects\" -H \"accept: application/json\""
@@ -311,38 +417,6 @@ def seek(request):
         projects[test_projects["data"][x]["id"]
                  ] = test_projects["data"][x]["attributes"]["title"]
     if request.method == 'POST':
-        if request.FILES.get('uploadfiles'):
-            upload_dir = (
-                "tmp" +
-                hashlib.md5(request.session.get(
-                    'username').encode('utf-8')).hexdigest()
-            )
-            upload_full_path = os.path.join(settings.MEDIA_ROOT, upload_dir)
-            content_type = request.FILES['uploadfiles'].content_type
-            if not os.path.exists(upload_full_path):
-                os.makedirs(upload_full_path)
-
-            upload = request.FILES["uploadfiles"]
-            while os.path.exists(os.path.join(upload_full_path, upload.name)):
-                upload.name = '_' + upload.name
-            dest = open(os.path.join(upload_full_path, upload.name), 'wb')
-            for chunk in upload.chunks():
-                dest.write(chunk)
-            dest.close()
-            seekupload(
-                request.session.get('username'),
-                request.session.get('password'),
-                request.session.get('storage'),
-                request.POST.get('title'),
-                os.path.join(upload_full_path, upload.name),
-                upload.name,
-                content_type,
-                1,
-                request.POST.get("proj").split(',')[0],
-                request.POST.get("as").split(',')[0],
-                request.POST.get('description')
-            )
-            call(["rm", "-r", upload_full_path])
         if request.POST.get("projects") is not None:
             selected_project = request.POST.get("projects").split(',')[0]
             selected_project_name = request.POST.get("projects").split(',')[1]
@@ -425,10 +499,77 @@ def seek(request):
                     [assay_search_query], stdout=subprocess.PIPE, shell=True).communicate()[0].decode()
                 found_assays = json.loads(res_assays)
                 assay_names[assay_id] = found_assays["data"]["attributes"]["title"]
+        cns = request.POST.get('cns')
+        cna = request.POST.get('cna')
+        if (
+            request.POST.get('newstudy')
+        ):
+            # create study function
+            create_study(
+                request.session.get('username'),
+                request.session.get('password'),
+                request.session.get('storage'),
+                request.POST.get("user"),
+                request.POST.get("proj").split(',')[0],
+                request.POST.get("inv").split(',')[0],
+                request.POST.get('stitle'),
+                request.POST.get('sdescription'),
+                request.POST.get('newstudy')
+            )
+        if (
+            request.POST.get('newassay')
+        ):
+            # create assay function
+            create_assay(
+                request.session.get('username'),
+                request.session.get('password'),
+                request.session.get('storage'),
+                request.POST.get("user"),
+                request.POST.get("proj").split(',')[0],
+                request.POST.get("stu").split(',')[0],
+                request.POST.get('atitle'),
+                request.POST.get('adescription'),
+                request.POST.get('assay_type'),
+                request.POST.get('technology_type'),
+                request.POST.get('newassay')
+            )
+        if request.FILES.get('uploadfiles'):
+            upload_dir = (
+                "tmp" +
+                hashlib.md5(request.session.get(
+                    'username').encode('utf-8')).hexdigest()
+            )
+            upload_full_path = os.path.join(settings.MEDIA_ROOT, upload_dir)
+            content_type = request.FILES['uploadfiles'].content_type
+            if not os.path.exists(upload_full_path):
+                os.makedirs(upload_full_path)
+
+            upload = request.FILES["uploadfiles"]
+            while os.path.exists(os.path.join(upload_full_path, upload.name)):
+                upload.name = '_' + upload.name
+            dest = open(os.path.join(upload_full_path, upload.name), 'wb')
+            for chunk in upload.chunks():
+                dest.write(chunk)
+            dest.close()
+            seekupload(
+                request.session.get('username'),
+                request.session.get('password'),
+                request.session.get('storage'),
+                request.POST.get('title'),
+                os.path.join(upload_full_path, upload.name),
+                upload.name,
+                content_type,
+                request.POST.get("user"),
+                request.POST.get("proj").split(',')[0],
+                request.POST.get("as").split(',')[0],
+                request.POST.get('description')
+            )
+            call(["rm", "-r", upload_full_path])
     return render(request, "seek.html", context={'projects': projects,
                                                  'investigations': inv_names,
                                                  'studies': study_names,
                                                  'assays': assay_names,
+                                                 'userids': user_dict,
                                                  'proj': selected_project,
                                                  'proj_name': selected_project_name,
                                                  'inv': selected_investigation,
@@ -437,6 +578,8 @@ def seek(request):
                                                  'stu_name': selected_study_name,
                                                  'as': selected_assay,
                                                  'as_name': selected_assay_name,
+                                                 'cns': cns,
+                                                 'cna': cna,
                                                  'searches': searches})
 
 
@@ -2670,8 +2813,6 @@ def rerun_analysis(request):
                 mydict["in%s" % (str(i+1))] = gi.workflows.get_workflow_inputs(
                     newworkflowid, label=label
                 )[0]
-        print(urls)
-        print(gi.workflows.get_workflow_inputs(newworkflowid, label=label))
         in_count = 1
         for dummyk, v in mydict.items():
             datamap[v] = {'src': "hda",
