@@ -7,8 +7,14 @@
 var USER = document.getElementById('user').innerHTML.replace('@', '');
 var SERVER = document.getElementById('storagename').innerHTML
 if(SERVER.indexOf("seek") > 0 || SERVER.indexOf("127.0.0.1") > 0) {
+    if(SERVER.indexOf(":3000") > 0) {
+        SERVER = SERVER.replace(":3000", "")
+        var SPARQL_ENDPOINT = SERVER + ':8890/sparql?default-graph-uri=&query='
+    } else {
+        var SPARQL_ENDPOINT = SERVER + ':8890/sparql?default-graph-uri=seek:public&query='
+    }
     // var SPARQL_ENDPOINT = 'http://seek.erasmusmc.nl:8890/sparql?default-graph-uri=seek:public&query='
-    var SPARQL_ENDPOINT = SERVER + ':8890/sparql?default-graph-uri=seek:public&query='
+    
     // var SPARQL_ENDPOINT = 'http://localhost:8890/sparql?default-graph-uri=seek-development:public&query='
     document.getElementById("ssearch").style.display = "block";
     document.getElementById("asearch").style.display = "block";
@@ -26,14 +32,14 @@ $(document).ready(function () {
     $("#infoPanel").addClass('hidden');
     if(SPARQL_ENDPOINT.indexOf("seek") >= 0 || SPARQL_ENDPOINT.indexOf("127.0.0.1") >= 0){
         var investigations = "PREFIX dcterms: <http://purl.org/dc/terms/>" + 
-            "SELECT ?value WHERE {?s dcterms:title ?value . " +
+            "SELECT DISTINCT ?value WHERE {?s dcterms:title ?value . " +
             "FILTER regex(?s, 'investigations', 'i')}"
         var studies = "PREFIX dcterms: <http://purl.org/dc/terms/> " +
-            "SELECT ?value WHERE {" +
+            "SELECT DISTINCT ?value WHERE {" +
             "?s dcterms:title ?value " +
             "FILTER regex(?s, 'studies', 'i')}"
         var assays = "PREFIX dcterms: <http://purl.org/dc/terms/> " +
-            "SELECT ?value WHERE {" +
+            "SELECT DISTINCT ?value WHERE {" +
             "?s dcterms:title ?value " +
             "FILTER regex(?s, 'assays', 'i')}"
         var iservice = encodeURI(
@@ -211,20 +217,22 @@ function sparqlQuery() {
             var query = 
                 "PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> " +
                 "PREFIX dcterms: <http://purl.org/dc/terms/> " +
-                "PREFIX jerm: <http://www.mygrid.org.uk/ontology/JERMOntology#> " +
-                "SELECT ?investigations ?studies ?assays ?datafiles ?files WHERE {" +
-                "?i dcterms:title ?investigations . " +
+                "PREFIX jerm: <http://jermontology.org/ontology/JERMOntology#> " +
+                "SELECT DISTINCT ?file ?filename ?project ?investigation ?study ?assay WHERE {" +
+                "?i dcterms:title ?investigation . " +
                 "FILTER regex(?i, 'investigations', 'i') . " +
+                "?i jerm:itemProducedBy ?projectid . " +
+                "?projectid dcterms:title ?project . " +
                 "?i jerm:hasPart ?studyid . " +
                 "FILTER regex(?studyid, 'studies', 'i') . " +
-                "?studyid dcterms:title ?studies . " +
+                "?studyid dcterms:title ?study . " +
                 "?studyid jerm:hasPart ?assayid . " +
-                "?assayid dcterms:title ?assays . " +
-                "?assayid jerm:hasPart ?files . " +
-                "?files dcterms:title ?datafiles . " +
-                "FILTER regex(?investigations, '" + ISEARCH + "', 'i') . " +
-                "FILTER regex(?studies, '" + SSEARCH + "', 'i') . " +
-                "FILTER regex(?assays, '" + ASEARCH + "', 'i')}";
+                "?assayid dcterms:title ?assay . " +
+                "?file jerm:isPartOf ?assayid . " + 
+                "?file dcterms:title ?filename ." +
+                "FILTER regex(?investigation, '" + ISEARCH + "', 'i') . " +
+                "FILTER regex(?study, '" + SSEARCH + "', 'i') . " +
+                "FILTER regex(?assay, '" + ASEARCH + "', 'i')}";
         } else {
             var query = 
                 "SELECT DISTINCT ?pid ?meta ?investigation ?study ?sex " +
