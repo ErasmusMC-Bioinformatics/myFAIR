@@ -218,7 +218,7 @@ function sparqlQuery() {
                 "PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> " +
                 "PREFIX dcterms: <http://purl.org/dc/terms/> " +
                 "PREFIX jerm: <http://jermontology.org/ontology/JERMOntology#> " +
-                "SELECT DISTINCT ?file ?filename ?project ?investigation ?study ?assay WHERE {" +
+                "SELECT DISTINCT ?file (?filename AS ?file_title) ?project ?investigation ?study ?assay WHERE {" +
                 "?i dcterms:title ?investigation . " +
                 "FILTER regex(?i, 'investigations', 'i') . " +
                 "?i jerm:itemProducedBy ?projectid . " +

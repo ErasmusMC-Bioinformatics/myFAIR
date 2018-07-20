@@ -1523,6 +1523,8 @@ def make_data_files(gi, files, username, password, galaxyemail, galaxypass,
                     control, test, history_id, filetype, dbkey):
     """Create datafiles and send them to the Galaxy server.
 
+    TODO: Store Galaxy results in SEEK.
+
     Arguments:
         gi {GalaxyInstance} -- The Galaxy Instance.
         files {list} -- A list of files to use within Galaxy
@@ -1540,17 +1542,25 @@ def make_data_files(gi, files, username, password, galaxyemail, galaxypass,
     ftp = gi.config.get_config()["ftp_upload_site"]
     if "bioinf-galaxian" in ftp:
         ftp = "ftp://bioinf-galaxian.erasmusmc.nl:23"
-    # else: 
-    #     ftp = gi.config.get_config()["ftp_upload_site"]
     for file in files:
-        nfile = str(file).split('/')
-        filename = nfile[len(nfile)-1]
-        with open(username + "/input_" + filename, "w") as dfile:
-            cont = subprocess.Popen([
-                "curl -u " + username + ":" + password + " -k -s " + file
-            ], stdout=subprocess.PIPE, shell=True).communicate()[0].decode()
-            dfile.write(cont)
-        dfile.close()
+        if "localhost" in file:
+            get_file_info = ("curl -X GET \"" + file + "\" -H \"accept: application/json\"")
+            file_info = subprocess.Popen([get_file_info], stdout=subprocess.PIPE, shell=True).communicate()[0].decode()
+            json_file_info = json.loads(file_info)
+            for v in range(0, len(json_file_info["data"]["attributes"]["versions"])):
+                file_url = json_file_info["data"]["attributes"]["versions"][v]["url"]
+                filename = json_file_info["data"]["attributes"]["content_blobs"][0]["original_filename"]
+            file_url = file_url.replace('?', '/download?')
+            call(["curl -L " + file_url + " -o " + username + "/input_" + filename], shell=True)
+        else:
+            nfile = str(file).split('/')
+            filename = nfile[len(nfile)-1]
+            with open(username + "/input_" + filename, "w") as dfile:
+                cont = subprocess.Popen([
+                    "curl -u " + username + ":" + password + " -k -s " + file
+                ], stdout=subprocess.PIPE, shell=True).communicate()[0].decode()
+                dfile.write(cont)
+            dfile.close()
         if control != "[]" or test != "[]":
             samples_a, samples_b, ndfilea, ndfileb, tfile = split_data_files(
                 username, filename, control, test)
@@ -1577,17 +1587,28 @@ def make_data_files(gi, files, username, password, galaxyemail, galaxypass,
             call(["rm", ndfilea.name])
             call(["rm", ndfileb.name])
         else:
-            with open(username + "/input_" + filename, "r") as tfile:
+            if "localhost" in file:
                 check_call([
                     "lftp -u " + galaxyemail + ":" + galaxypass + " " + ftp +
-                    " -e \"put " + tfile.name + "; bye\""
+                    " -e \"put " + username + "/input_" + filename + "; bye\""
                 ], shell=True)
+                gi.tools.upload_from_ftp(
+                    "input_" + filename, history_id,
+                    file_type=filetype, dbkey=dbkey)
+                uploaded_files.append("input_" + filename)
+                call(["rm", "-r", username + "/input_" + filename])
+            else:
+                with open(username + "/input_" + filename, "r") as tfile:
+                    check_call([
+                        "lftp -u " + galaxyemail + ":" + galaxypass + " " + ftp +
+                        " -e \"put " + tfile.name + "; bye\""
+                    ], shell=True)
                 gi.tools.upload_from_ftp(
                     tfile.name.split("/")[-1], history_id,
                     file_type=filetype, dbkey=dbkey)
                 uploaded_files.append(tfile.name.split("/")[-1])
-        call(["rm", dfile.name])
-        call(["rm", tfile.name])
+                call(["rm", dfile.name])
+                call(["rm", tfile.name])
     hist = gi.histories.show_history(history_id)
     state = hist['state_ids']
     dump = json.dumps(state)
@@ -1611,10 +1632,13 @@ def make_data_files(gi, files, username, password, galaxyemail, galaxypass,
                 not status['upload']
         ):
             for uf in uploaded_files:
-                check_call([
-                    "lftp -u " + galaxyemail + ":" + galaxypass + " " + ftp +
-                    " -e \"rm -r " + uf + "; bye\""
-                ], shell=True)
+                try:
+                    check_call([
+                        "lftp -u " + galaxyemail + ":" + galaxypass + " " + ftp +
+                        " -e \"rm -r " + uf + "; bye\""
+                    ], shell=True)
+                except subprocess.CalledProcessError:
+                    pass
             break
 
 
@@ -1831,23 +1855,14 @@ def upload(request):
                     mydict[label] = gi.workflows.get_workflow_inputs(
                         workflowid, label=label)[0]
             in_count = 0
-            for k, v in mydict.items():
+            for k, v in mydict.items():                
                 datasets = get_input_data(
                     request.session.get('galaxyemail'),
                     request.session.get('galaxypass'),
                     request.session.get('server'))[0]
-                # datamap[v] = {'src': "hda", 'id': get_input_data(
-                #     request.session.get('galaxyemail'),
-                #     request.session.get('galaxypass'),
-                #     request.session.get('server')[0][in_count]
                 for dname, did in datasets.items():
                     if k in dname:
                         datamap[v] = {'src': "hda", 'id': did}
-                # data_ids.append(get_input_data(
-                #     request.session.get('galaxyemail'),
-                #     request.session.get(
-                #         'galaxypass'),
-                #     request.session.get('server'))[0][in_count])
                 in_count += 1
             # if makecol == "true":
             #     gi.histories.create_dataset_collection(
