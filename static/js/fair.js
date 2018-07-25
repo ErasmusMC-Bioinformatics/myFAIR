@@ -6,16 +6,14 @@
 // var count = 0;
 var USER = document.getElementById('user').innerHTML.replace('@', '');
 var SERVER = document.getElementById('storagename').innerHTML
-if(SERVER.indexOf("seek") > 0 || SERVER.indexOf("127.0.0.1") > 0) {
+var STORAGETYPE = document.getElementById('storage-type').innerHTML
+if(STORAGETYPE === "SEEK") {
     if(SERVER.indexOf(":3000") > 0) {
         SERVER = SERVER.replace(":3000", "")
         var SPARQL_ENDPOINT = SERVER + ':8890/sparql?default-graph-uri=&query='
     } else {
         var SPARQL_ENDPOINT = SERVER + ':8890/sparql?default-graph-uri=seek:public&query='
     }
-    // var SPARQL_ENDPOINT = 'http://seek.erasmusmc.nl:8890/sparql?default-graph-uri=seek:public&query='
-    
-    // var SPARQL_ENDPOINT = 'http://localhost:8890/sparql?default-graph-uri=seek-development:public&query='
     document.getElementById("ssearch").style.display = "block";
     document.getElementById("asearch").style.display = "block";
 } else {
@@ -213,18 +211,17 @@ function sparqlQuery() {
     var ASEARCH = document.getElementById('asearch').value;
     var RSEARCH = document.getElementById('search-result').value;
     if (ISEARCH != '' || SSEARCH != '' || ASEARCH != '') {
-        if(SPARQL_ENDPOINT.indexOf("seek") >= 0  || SPARQL_ENDPOINT.indexOf("127.0.0.1") >= 0){
+        if(STORAGETYPE === "SEEK"){
             var query = 
                 "PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> " +
                 "PREFIX dcterms: <http://purl.org/dc/terms/> " +
                 "PREFIX jerm: <http://jermontology.org/ontology/JERMOntology#> " +
                 "SELECT DISTINCT ?file (?filename AS ?file_title) ?project ?investigation ?study ?assay WHERE {" +
-                "?i dcterms:title ?investigation . " +
-                "FILTER regex(?i, 'investigations', 'i') . " +
+                "?i dcterms:title ?investigation ; " +
+                "rdf:type jerm:Investigation ." +
                 "?i jerm:itemProducedBy ?projectid . " +
                 "?projectid dcterms:title ?project . " +
                 "?i jerm:hasPart ?studyid . " +
-                "FILTER regex(?studyid, 'studies', 'i') . " +
                 "?studyid dcterms:title ?study . " +
                 "?studyid jerm:hasPart ?assayid . " +
                 "?assayid dcterms:title ?assay . " +

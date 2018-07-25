@@ -44,8 +44,13 @@ def login(request):
         galaxypass = request.POST.get("galaxypass")
         galaxyemail = request.POST.get("galaxyemail")
         noexpire = request.POST.get('no-expire')
+        seekserver = request.POST.get('isseek')
         if storage != "":
             request.session['storage'] = storage
+            if seekserver == "yes":
+                request.session['storage_type'] = "SEEK"
+            else:
+                request.session['storage_type'] = "nextcloud"
         else:
             request.session.flush()
         if galaxypass != "":
@@ -186,6 +191,7 @@ def index(request):
                                'user': gusername, 'username': username,
                                'password': password, 'server': server,
                                'storage': storage,
+                               'storagetype': request.session.get('storage_type'),
                                'investigations': investigations,
                                'studies': folders, 'inv': investigation,
                                'dbkeys': dbkeys,
@@ -1867,30 +1873,43 @@ def upload(request):
             # if makecol == "true":
             #     gi.histories.create_dataset_collection(
             #         history_id, make_collection(data_ids))
-            gi.workflows.invoke_workflow(
+            
+            # gi.workflows.invoke_workflow(
+            #     workflowid, datamap, history_id=history_id)
+            # gi.workflows.export_workflow_to_local_path(
+            #     workflowid,
+            #     request.session.get('username'),
+            #     True)
+
+
+
+            gi.workflows.run_workflow(
                 workflowid, datamap, history_id=history_id)
             gi.workflows.export_workflow_to_local_path(
                 workflowid,
                 request.session.get('username'),
                 True)
-            datafiles = get_output(request.session.get('galaxyemail'),
-                                   request.session.get('galaxypass'),
-                                   request.session.get('server'))
-            store_results(1, gi, datafiles, request.session.get('server'),
-                          request.session.get('username'),
-                          request.session.get('password'),
-                          request.session.get('storage'),
-                          groups, resultid, investigations, date, history_id)
-            store_results(3, gi, datafiles, request.session.get('server'),
-                          request.session.get('username'),
-                          request.session.get('password'),
-                          request.session.get('storage'),
-                          groups, resultid, investigations, date, history_id)
-            ga_store_results(request.session.get('username'),
-                             request.session.get('password'), workflowid,
-                             request.session.get('storage'),
-                             resultid, groups, investigations)
-            call(["rm", request.session.get('username') + "/input_test"])
+            if request.session.get("storage_type") == "SEEK":
+                pass
+            else:
+                datafiles = get_output(request.session.get('galaxyemail'),
+                                    request.session.get('galaxypass'),
+                                    request.session.get('server'))
+                store_results(1, gi, datafiles, request.session.get('server'),
+                            request.session.get('username'),
+                            request.session.get('password'),
+                            request.session.get('storage'),
+                            groups, resultid, investigations, date, history_id)
+                store_results(3, gi, datafiles, request.session.get('server'),
+                            request.session.get('username'),
+                            request.session.get('password'),
+                            request.session.get('storage'),
+                            groups, resultid, investigations, date, history_id)
+                ga_store_results(request.session.get('username'),
+                                request.session.get('password'), workflowid,
+                                request.session.get('storage'),
+                                resultid, groups, investigations)
+                call(["rm", request.session.get('username') + "/input_test"])
             return render_to_response('results.html', context={
                 'workflowid': workflowid,
                 'inputs': inputs, 'pid': pid,

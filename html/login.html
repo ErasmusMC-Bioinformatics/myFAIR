@@ -41,8 +41,12 @@
                 <td><input type="password" name="galaxypass" id="galaxypass" placeholder="Enter your Galaxy password" required></td>
             </tr>
             <tr>
-                <td>SEEK URL:<span style="color:red">*</span></td>
-                <td><input type="text" name="storage" id="storage" placeholder="i.e. seek.erasmusmc.nl" required></td>
+                <td>Storage URL:<span style="color:red">*</span></td>
+                <td>
+                    <input type="text" name="storage" id="storage" placeholder="i.e. seek.erasmusmc.nl" required>
+                    <input type="checkbox" id="isseek" name="isseek" onclick="seekCreate()" value="yes">
+                    <label for="cns">SEEK server?</label> 
+                </td>
             </tr>
             <tr>
                 <td>Username:<span style="color:red">*</span></td>
