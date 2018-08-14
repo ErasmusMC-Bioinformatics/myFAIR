@@ -39,6 +39,7 @@ $(document).ready(function () {
         var assays = "PREFIX dcterms: <http://purl.org/dc/terms/> " +
             "SELECT DISTINCT ?value WHERE {" +
             "?s dcterms:title ?value " +
+            "FILTER (!regex(?value, '__result__', 'i')) . " +
             "FILTER regex(?s, 'assays', 'i')}"
         var iservice = encodeURI(
             SPARQL_ENDPOINT + investigations + '&format=json').replace(
@@ -166,7 +167,7 @@ $(document).ready(function () {
         }
     }
     
-    resultList = [studies, investigations]
+    resultList = [studies]
 
 
     for (rl in resultList) {
@@ -216,7 +217,7 @@ function sparqlQuery() {
                 "PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> " +
                 "PREFIX dcterms: <http://purl.org/dc/terms/> " +
                 "PREFIX jerm: <http://jermontology.org/ontology/JERMOntology#> " +
-                "SELECT DISTINCT ?file (?filename AS ?file_title) ?project ?investigation ?study ?assay WHERE {" +
+                "SELECT DISTINCT ?file ?filetitle ?investigation ?study ?assay WHERE {" +
                 "?i dcterms:title ?investigation ; " +
                 "rdf:type jerm:Investigation ." +
                 "?i jerm:itemProducedBy ?projectid . " +
@@ -226,10 +227,12 @@ function sparqlQuery() {
                 "?studyid jerm:hasPart ?assayid . " +
                 "?assayid dcterms:title ?assay . " +
                 "?file jerm:isPartOf ?assayid . " + 
-                "?file dcterms:title ?filename ." +
+                "?file dcterms:title ?filetitle ." +
                 "FILTER regex(?investigation, '" + ISEARCH + "', 'i') . " +
                 "FILTER regex(?study, '" + SSEARCH + "', 'i') . " +
-                "FILTER regex(?assay, '" + ASEARCH + "', 'i')}";
+                "FILTER regex(?assay, '" + ASEARCH + "', 'i') . " +
+                "FILTER (!regex(?assay, '__result__', 'i')) . " +
+                "}";
         } else {
             var query = 
                 "SELECT DISTINCT ?pid ?meta ?investigation ?study ?sex " +
@@ -262,7 +265,26 @@ function sparqlQuery() {
         }
     }
     if (RSEARCH != '') {
-        var query = "SELECT DISTINCT (?s as ?id) ?resultid ?investigation " +
+        if(STORAGETYPE === "SEEK"){
+            var query = 
+            "PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> " +
+            "PREFIX dcterms: <http://purl.org/dc/terms/> " +
+            "PREFIX jerm: <http://jermontology.org/ontology/JERMOntology#> " +
+            "SELECT DISTINCT ?assayid (?assays AS ?result_assay) ?investigations ?studies  WHERE {" +
+                "?i dcterms:title ?investigations ; " +
+                "rdf:type jerm:Investigation ." +
+                "?i jerm:itemProducedBy ?projectid . " +
+                "?projectid dcterms:title ?project . " +
+                "?i jerm:hasPart ?studyid . " +
+                "?studyid dcterms:title ?studies . " +
+                "?studyid jerm:hasPart ?assayid . " +
+                "?assayid dcterms:title ?assays . " +
+                "?file jerm:isPartOf ?assayid . " + 
+                "?file dcterms:title ?filetitle . " +
+                "FILTER regex(?studies, '" + RSEARCH + "', 'i') ." +
+                "FILTER regex(?assays, '__result__', 'i')}";
+        } else {
+            var query = "SELECT DISTINCT (?s as ?id) ?resultid ?investigation " +
             "?study ?date ?workflow ?historyid FROM " +
             "<http://127.0.0.1:3030/ds/data/" + USER + ">" +
             "WHERE {" +
@@ -280,20 +302,7 @@ function sparqlQuery() {
             "#date> ?date ." + "FILTER (regex(?study, '" + RSEARCH +
             "', 'i') || regex(?investigation, '" + RSEARCH +
             "', 'i'))} ORDER BY DESC(?date)";
-        // var query = "PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> " +
-        //             "PREFIX dcterms: <http://purl.org/dc/terms/> " +
-        //             "PREFIX jerm: <http://www.mygrid.org.uk/ontology/JERMOntology#> " +
-        //             "SELECT ?investigations ?studies ?assays ?datafiles WHERE {" +
-        //             "?i dcterms:title ?investigations . " +
-        //             "FILTER regex(?i, 'investigations', 'i') . " +
-        //             "?i jerm:hasPart ?studyid . " +
-        //             "FILTER regex(?studyid, 'studies', 'i') . " +
-        //             "?studyid dcterms:title ?studies . " +
-        //             "?studyid jerm:hasPart ?assayid . " +
-        //             "?assayid dcterms:title ?assays . " +
-        //             "?assayid jerm:hasPart ?files . " +
-        //             "?files dcterms:title ?datafiles . " +
-        //             "FILTER regex(?investigations, '" + RSEARCH + "', 'i')}";
+        }
     }
     
     var isValueMissing = false;
@@ -424,8 +433,13 @@ function fillTable(result) {
             return el.textContent === content;
         });
     };
-    var hasCol = hasColumn("#results_table thead", "workflow");
+    if(STORAGETYPE === "SEEK"){
+        var hasCol = hasColumn("#results_table thead", "result_assay");
+    } else {
+        var hasCol = hasColumn("#results_table thead", "workflow");
+    }
     if (hasCol) {
+        document.getElementById('workflow_select').style.display = "none";
         document.getElementById('show_results').style.display = "block";
         $('#galaxy').html(
             '<p>Select a result and press the Show results button</p>'
@@ -434,11 +448,11 @@ function fillTable(result) {
         $('#galaxy').html(
             '<select name="filetype" id="filetype" class="select-option">' +
             '<optgroup label="File Type:" style="color: #21317F;">' +
+            '<option value="auto">auto</option>' +
             '<option value="vcf">vcf</option>' +
             '<option value="tabular">tabular</option>' +
             '<option value="fasta">fasta</option>' +
             '<option value="fastq">fastq</option>' +
-            '<option value="auto">auto</option>' +
             '</optgroup>' +
             '</select>' +
             '&nbsp' +
@@ -490,10 +504,10 @@ function postdata(g) {
     var workflowid = document.getElementById('workflow').value;
     var selected = new Array;
     var selectout = new Array;
-    var onlydata = "";
+    var sendmeta = "";
     var col = "";
-    if (document.getElementById('onlydata').checked) {
-        var onlydata = document.getElementById('onlydata').value;
+    if (document.getElementById('sendmeta').checked) {
+        var sendmeta = document.getElementById('sendmeta').value;
     }
     if (document.getElementById('col').checked) {
         var col = document.getElementById('col').value;
@@ -539,7 +553,7 @@ function postdata(g) {
         data: {
             'data_id': data_id, 'token': token, 'workflowid': workflowid,
             'filetype': filetype, 'dbkey': dbkey, 'meta_id': meta_id,
-            'selected': jsonSelected, 'meta': jsonMeta, 'onlydata': onlydata,
+            'selected': jsonSelected, 'meta': jsonMeta, 'sendmeta': sendmeta,
             'col': col, 'samples': jsonSamples, 'samplesb': jsonSamplesb,
             'historyname': historyname, 'group': jsonGroup,
             'investigation': jsonInvestigation

@@ -7,6 +7,7 @@ import subprocess
 import time
 import uuid
 import tempfile
+import magic
 
 from subprocess import call
 from subprocess import check_call
@@ -1626,7 +1627,7 @@ def make_data_files(gi, files, username, password, galaxyemail, galaxypass,
         status['new'] or
         status['upload']
     ):
-        time.sleep(60)
+        time.sleep(90)
         hist = gi.histories.show_history(history_id)
         state = hist['state_ids']
         dump = json.dumps(state)
@@ -1767,7 +1768,7 @@ def make_meta_files(gi, mfiles, username, password, galaxyemail,
             status['new'] or
             status['upload']
     ):
-        time.sleep(60)
+        time.sleep(90)
         hist = gi.histories.show_history(history_id)
         state = hist['state_ids']
         dump = json.dumps(state)
@@ -1804,7 +1805,7 @@ def upload(request):
     dbkey = request.POST.get('dbkey')
     workflowid = request.POST.get('workflowid')
     pid = request.POST.get('data_id')
-    onlydata = request.POST.get('onlydata')
+    sendmeta = request.POST.get('sendmeta')
     # makecol = request.POST.get('col')
     # data_ids = []
     control = request.POST.get('samples')
@@ -1830,7 +1831,7 @@ def upload(request):
     if len(list(filter(None, files))) <= 0:
         return HttpResponseRedirect(reverse("index"))
     else:
-        if onlydata == "true":
+        if sendmeta != "true":
             make_data_files(gi, files, request.session.get('username'),
                             request.session.get('password'),
                             request.session.get('galaxyemail'),
@@ -1873,38 +1874,28 @@ def upload(request):
             # if makecol == "true":
             #     gi.histories.create_dataset_collection(
             #         history_id, make_collection(data_ids))
-            
-            # gi.workflows.invoke_workflow(
-            #     workflowid, datamap, history_id=history_id)
-            # gi.workflows.export_workflow_to_local_path(
-            #     workflowid,
-            #     request.session.get('username'),
-            #     True)
-
-
-
             gi.workflows.run_workflow(
                 workflowid, datamap, history_id=history_id)
             gi.workflows.export_workflow_to_local_path(
                 workflowid,
                 request.session.get('username'),
                 True)
-            if request.session.get("storage_type") == "SEEK":
-                pass
-            else:
-                datafiles = get_output(request.session.get('galaxyemail'),
-                                    request.session.get('galaxypass'),
-                                    request.session.get('server'))
-                store_results(1, gi, datafiles, request.session.get('server'),
-                            request.session.get('username'),
-                            request.session.get('password'),
-                            request.session.get('storage'),
-                            groups, resultid, investigations, date, history_id)
-                store_results(3, gi, datafiles, request.session.get('server'),
-                            request.session.get('username'),
-                            request.session.get('password'),
-                            request.session.get('storage'),
-                            groups, resultid, investigations, date, history_id)
+            datafiles = get_output(request.session.get('galaxyemail'),
+                                request.session.get('galaxypass'),
+                                request.session.get('server'))
+            store_results(1, gi, datafiles, request.session.get('server'),
+                        request.session.get('username'),
+                        request.session.get('password'),
+                        request.session.get('storage'), workflowid,
+                        groups, resultid, investigations, date, history_id, 
+                        request.session.get("storage_type"))
+            store_results(3, gi, datafiles, request.session.get('server'),
+                        request.session.get('username'),
+                        request.session.get('password'),
+                        request.session.get('storage'), workflowid,
+                        groups, resultid, investigations, date, history_id,
+                        request.session.get("storage_type"))
+            if request.session.get("storage_type") != "SEEK":
                 ga_store_results(request.session.get('username'),
                                 request.session.get('password'), workflowid,
                                 request.session.get('storage'),
@@ -1964,8 +1955,8 @@ def make_collection(data_ids):
     return collection
 
 
-def store_results(column, gi, datafiles, server, username, password, storage,
-                  groups, resultid, investigations, date, historyid):
+def store_results(column, gi, datafiles, server, username, password, storage, workflowid,
+                  groups, resultid, investigations, date, historyid, storagetype):
     """Store input and output files that where created or used in a
     Galaxy workflow.
 
@@ -1982,6 +1973,7 @@ def store_results(column, gi, datafiles, server, username, password, storage,
         investigations {list} -- A list of investigations.
         date {str} -- The current date and time.
     """
+    assay_id_list = []
     o = 0
     for name in datafiles[column]:
         cont = subprocess.Popen([
@@ -2010,93 +2002,157 @@ def store_results(column, gi, datafiles, server, username, password, storage,
         #         strftime("%d_%b_%Y_%H:%M:%S", gmtime()) + "_" + shaname)
         # history_tar = strftime("%d_%b_%Y_%H:%M:%S", gmtime()) + "_" + shaname
         # url.append(strftime("%d_%b_%Y_%H:%M:%S", gmtime()) + "_" + shaname)
-        for i in investigations:
-            for g in groups:
-                call([
-                    "curl -s -k -u " + username + ":" + password +
-                    " -X MKCOL " + storage + "/" + i.replace('"', '') +
-                    "/" + g.replace('"', '') + "/results_" + str(resultid)
-                ], shell=True)
-                call([
-                    "curl -s -k -u " + username + ":" + password +
-                    " -T " + '\'' + username + "/" + new_name + '\'' +
-                    " " + storage + "/" + i.replace('"', '') + "/" +
-                    g.replace('"', '') + "/results_" + str(resultid) +
-                    "/" + new_name
-                ], shell=True)
-                # call([
-                #     "curl -s -k -u " + username + ":" + password +
-                #     " -T " + '\'' + username + "/" + new_name + '\'' +
-                #     " " + storage + "/" + i.replace('"', '') + "/" +
-                #     g.replace('"', '') + "/results_" + str(resultid) +
-                #     "/" + history_tar
-                # ], shell=True)
-                call([
-                    "curl http://127.0.0.1:3030/ds/update -X POST --data "
-                    "'update=INSERT DATA { "
-                    "GRAPH <http://127.0.0.1:3030/ds/data/" +
-                    username.replace('@', '') +
-                    "> { <http://127.0.0.1:3030/" + str(resultid) +
-                    "> <http://127.0.0.1:3030/ds/data?graph=" +
-                    username.replace('@', '') + "#pid> \"" + storage + "/" +
-                    i.replace('"', '') + "/" + g.replace('"', '') +
-                    "/results_" + str(resultid) + "/" + new_name +
-                    "\" } }' -H 'Accept: text/plain,*/*;q=0.9'"
-                ], shell=True)
-                call([
-                    "curl http://127.0.0.1:3030/ds/update -X POST --data "
-                    "'update=INSERT DATA { "
-                    "GRAPH <http://127.0.0.1:3030/ds/data/" +
-                    username.replace('@', '') +
-                    "> { <http://127.0.0.1:3030/" + str(resultid) +
-                    "> <http://127.0.0.1:3030/ds/data?graph=" +
-                    username.replace('@', '') + "#results_id> \"" +
-                    str(resultid) + "\" } }' -H 'Accept: text/plain,*/*;q=0.9'"
-                ], shell=True)
-                call([
-                    "curl http://127.0.0.1:3030/ds/update -X POST --data "
-                    "'update=INSERT DATA { "
-                    "GRAPH <http://127.0.0.1:3030/ds/data/" +
-                    username.replace('@', '') +
-                    "> { <http://127.0.0.1:3030/" + str(resultid) +
-                    "> <http://127.0.0.1:3030/ds/data?graph=" +
-                    username.replace('@', '') + "#historyid> \"" + 
-                    str(historyid) + "\" } }'"
-                    " -H 'Accept: text/plain,*/*;q=0.9'"
-                ], shell=True)
-                call([
-                    "curl http://127.0.0.1:3030/ds/update -X POST --data "
-                    "'update=INSERT DATA { "
-                    "GRAPH <http://127.0.0.1:3030/ds/data/" +
-                    username.replace('@', '') +
-                    "> { <http://127.0.0.1:3030/" + str(resultid) +
-                    "> <http://127.0.0.1:3030/ds/data?graph=" +
-                    username.replace('@', '') + "#group_id> \"" +
-                    g.replace('"', '') +
-                    "\" } }' -H 'Accept: text/plain,*/*;q=0.9'"
-                ], shell=True)
-                call([
-                    "curl http://127.0.0.1:3030/ds/update -X POST --data "
-                    "'update=INSERT DATA { "
-                    "GRAPH <http://127.0.0.1:3030/ds/data/" +
-                    username.replace('@', '') + "> { <http://127.0.0.1:3030/" +
-                    str(resultid) + "> <http://127.0.0.1:3030/ds/data?graph=" +
-                    username.replace('@', '') + "#investigation_id> \"" +
-                    i.replace('"', '') +
-                    "\" } }' -H 'Accept: text/plain,*/*;q=0.9'"
-                ], shell=True)
-                call([
-                    "curl http://127.0.0.1:3030/ds/update -X POST --data "
-                    "'update=INSERT DATA { "
-                    "GRAPH <http://127.0.0.1:3030/ds/data/" +
-                    username.replace('@', '') + "> { <http://127.0.0.1:3030/" +
-                    str(resultid) + "> <http://127.0.0.1:3030/ds/data?graph=" +
-                    username.replace('@', '') + "#date> \"" + date +
-                    "\" } }' -H 'Accept: text/plain,*/*;q=0.9'"
-                ], shell=True)
-        call(["rm", username + "/" + new_name])
-        call(["rm", username + "/" + old_name])
-        o += 1
+        if storagetype != "SEEK":
+            for i in investigations:
+                for g in groups:
+                    call([
+                        "curl -s -k -u " + username + ":" + password +
+                        " -X MKCOL " + storage + "/" + i.replace('"', '') +
+                        "/" + g.replace('"', '') + "/results_" + str(resultid)
+                    ], shell=True)
+                    call([
+                        "curl -s -k -u " + username + ":" + password +
+                        " -T " + '\'' + username + "/" + new_name + '\'' +
+                        " " + storage + "/" + i.replace('"', '') + "/" +
+                        g.replace('"', '') + "/results_" + str(resultid) +
+                        "/" + new_name
+                    ], shell=True)
+                    # call([
+                    #     "curl -s -k -u " + username + ":" + password +
+                    #     " -T " + '\'' + username + "/" + new_name + '\'' +
+                    #     " " + storage + "/" + i.replace('"', '') + "/" +
+                    #     g.replace('"', '') + "/results_" + str(resultid) +
+                    #     "/" + history_tar
+                    # ], shell=True)
+                    call([
+                        "curl http://127.0.0.1:3030/ds/update -X POST --data "
+                        "'update=INSERT DATA { "
+                        "GRAPH <http://127.0.0.1:3030/ds/data/" +
+                        username.replace('@', '') +
+                        "> { <http://127.0.0.1:3030/" + str(resultid) +
+                        "> <http://127.0.0.1:3030/ds/data?graph=" +
+                        username.replace('@', '') + "#pid> \"" + storage + "/" +
+                        i.replace('"', '') + "/" + g.replace('"', '') +
+                        "/results_" + str(resultid) + "/" + new_name +
+                        "\" } }' -H 'Accept: text/plain,*/*;q=0.9'"
+                    ], shell=True)
+                    call([
+                        "curl http://127.0.0.1:3030/ds/update -X POST --data "
+                        "'update=INSERT DATA { "
+                        "GRAPH <http://127.0.0.1:3030/ds/data/" +
+                        username.replace('@', '') +
+                        "> { <http://127.0.0.1:3030/" + str(resultid) +
+                        "> <http://127.0.0.1:3030/ds/data?graph=" +
+                        username.replace('@', '') + "#results_id> \"" +
+                        str(resultid) + "\" } }' -H 'Accept: text/plain,*/*;q=0.9'"
+                    ], shell=True)
+                    call([
+                        "curl http://127.0.0.1:3030/ds/update -X POST --data "
+                        "'update=INSERT DATA { "
+                        "GRAPH <http://127.0.0.1:3030/ds/data/" +
+                        username.replace('@', '') +
+                        "> { <http://127.0.0.1:3030/" + str(resultid) +
+                        "> <http://127.0.0.1:3030/ds/data?graph=" +
+                        username.replace('@', '') + "#historyid> \"" +
+                        str(historyid) + "\" } }'"
+                        " -H 'Accept: text/plain,*/*;q=0.9'"
+                    ], shell=True)
+                    call([
+                        "curl http://127.0.0.1:3030/ds/update -X POST --data "
+                        "'update=INSERT DATA { "
+                        "GRAPH <http://127.0.0.1:3030/ds/data/" +
+                        username.replace('@', '') +
+                        "> { <http://127.0.0.1:3030/" + str(resultid) +
+                        "> <http://127.0.0.1:3030/ds/data?graph=" +
+                        username.replace('@', '') + "#group_id> \"" +
+                        g.replace('"', '') +
+                        "\" } }' -H 'Accept: text/plain,*/*;q=0.9'"
+                    ], shell=True)
+                    call([
+                        "curl http://127.0.0.1:3030/ds/update -X POST --data "
+                        "'update=INSERT DATA { "
+                        "GRAPH <http://127.0.0.1:3030/ds/data/" +
+                        username.replace('@', '') + "> { <http://127.0.0.1:3030/" +
+                        str(resultid) + "> <http://127.0.0.1:3030/ds/data?graph=" +
+                        username.replace('@', '') + "#investigation_id> \"" +
+                        i.replace('"', '') +
+                        "\" } }' -H 'Accept: text/plain,*/*;q=0.9'"
+                    ], shell=True)
+                    call([
+                        "curl http://127.0.0.1:3030/ds/update -X POST --data "
+                        "'update=INSERT DATA { "
+                        "GRAPH <http://127.0.0.1:3030/ds/data/" +
+                        username.replace('@', '') + "> { <http://127.0.0.1:3030/" +
+                        str(resultid) + "> <http://127.0.0.1:3030/ds/data?graph=" +
+                        username.replace('@', '') + "#date> \"" + date +
+                        "\" } }' -H 'Accept: text/plain,*/*;q=0.9'"
+                    ], shell=True)
+            o += 1
+    if storagetype == "SEEK":
+        study_search_query = (
+            "curl -X GET \"" + storage + 
+            "/studies\" -H \"accept: application/json\""
+        )
+        json_studies = subprocess.Popen(
+            [study_search_query],
+            stdout=subprocess.PIPE,
+            shell=True
+        ).communicate()[0].decode()
+        studies = json.loads(json_studies)
+        for s in range(0, len(studies["data"])):
+            study_name = studies["data"][s]["attributes"]["title"]
+            if study_name in groups:
+                studyid = studies["data"][s]["id"]
+                study_title = study_name
+                project_search_query = (
+                    "curl -X GET \"" + storage +
+                    "/projects\" -H \"accept: application/json\""
+                )
+                json_projects = subprocess.Popen(
+                    [project_search_query],
+                    stdout=subprocess.PIPE,
+                    shell=True
+                ).communicate()[0].decode()
+                projects = json.loads(json_projects)
+                for p in range(1, len(projects["data"]) + 1):
+                    project_id_query = (
+                        "curl -X GET \"" + storage + "/projects/" +
+                        str(p) + "\" -H \"accept: application/json\""
+                    )
+                    json_project = subprocess.Popen([project_id_query], stdout=subprocess.PIPE,
+                                                    shell=True).communicate()[0].decode()
+                    project = json.loads(json_project)
+                    for ps in range(0, len(project["data"]["relationships"]["studies"]["data"])):
+                        if studyid == project["data"]["relationships"]["studies"]["data"][ps]["id"]:
+                            projectid = str(p)
+                if column == 1:
+                    assay_title = (study_title + "__result__" + str(resultid))
+                    create_assay(
+                        username, password, storage, 1, projectid, studyid, assay_title,
+                        "Results for ID: " + str(resultid),
+                        "http://jermontology.org/ontology/JERMOntology#Experimental_assay_type",
+                        "http://jermontology.org/ontology/JERMOntology#Technology_type", assay_title
+                    )
+                assay_search_query = (
+                    "curl -X GET \"" + storage + "/assays\" -H \"accept: application/json\""
+                )
+                json_assays = subprocess.Popen(
+                    [assay_search_query],
+                    stdout=subprocess.PIPE,
+                    shell=True
+                ).communicate()[0].decode()
+                assays = json.loads(json_assays)
+                mime = magic.Magic(mime=True)
+                content_type = mime.from_file(username + "/" + new_name)
+                for ail in range(0, len(assays["data"])):
+                    assay_id_list.append(int(assays["data"][ail]["id"]))
+                for galaxyfile in os.listdir(username):
+                    seekupload(
+                        username, password, storage, galaxyfile, 
+                        username + "/" + galaxyfile,
+                        str(new_name), content_type, 1, projectid, 
+                        str(max(assay_id_list)), workflowid
+                    )
 
 
 def ga_store_results(username, password, workflowid, storage,
@@ -2146,7 +2202,7 @@ def ga_store_results(username, password, workflowid, storage,
                         workflowid +
                         "\" } }' -H 'Accept: text/plain,*/*;q=0.9'"
                     ], shell=True)
-            call(["rm", username + "/" + new_name])
+            # call(["rm", username + "/" + new_name])
 
 
 def ug_store_results(gi, galaxyemail, galaxypass, server, workflowid,
@@ -2332,8 +2388,8 @@ def show_results(request):
     storage = request.session.get('storage')
     # groups = []
     # results = []
-    inputs = []
-    out = []
+    inputs = {}
+    out = {}
     result = ""
     workflow = []
     resid = 0
@@ -2349,67 +2405,106 @@ def show_results(request):
             group = group.split(',')
             resultid = old_post['resultid']
             resultid = resultid.split(',')
-            result = get_results(group, resultid, investigations,
-                                  username, password, storage)
-            for r in result:
-                if ".ga" in r:
-                    wf = True
-                    nres = r.split('/')
-                    cont = subprocess.Popen([
-                        "curl -s -k -u " + username + ":" + password + " " +
-                        storage + "/" + nres[len(nres) - 4] + "/" +
-                        nres[len(nres) - 3] + "/" + nres[len(nres) - 2] + "/" +
-                        nres[len(nres) - 1]
-                    ], stdout=subprocess.PIPE, shell=True
-                    ).communicate()[0].decode()
-                    with open(username + "/" + nres[len(nres)-1], "w") as ga:
-                        ga.write(cont)
-                    workflow = read_workflow(ga.name)
-                    workflowid = subprocess.Popen([
-                        "curl -s -k http://127.0.0.1:3030/ds/query -X POST "
-                        "--data 'query=SELECT DISTINCT ?workflowid FROM "
-                        "<http://127.0.0.1:3030/ds/data/" +
-                        username.replace('@', '') +
-                        "> { VALUES (?workflow) {(\"" + ga.name +
-                        "\")}{ ?s <http://127.0.0.1:3030/ds/data?graph=" +
-                        username.replace(
-                            '@', '') + "#workflowid> "
-                        "?workflowid . ?s "
-                        "<http://127.0.0.1:3030/ds/data?graph=" +
-                        username.replace('@', '') + "#workflow> ?workflow . } "
-                        "} ORDER BY (?workflowid)' -H "
-                        "'Accept: application/sparql-results+json,*/*;q=0.9'"
-                    ], stdout=subprocess.PIPE, shell=True
-                    ).communicate()[0].decode()
-                    wid = json.dumps(workflowid)
-                    wfid = json.loads(workflowid)
-                    wid = json.dumps(
-                        wfid["results"]["bindings"][0]["workflowid"]["value"])
-                if not wf:
-                    wid = "0"
-                if "input_" in r:
-                    nres = r.split('/')
-                    inputs.append(nres[len(nres)-1])
-                else:
-                    nres = r.split('/')
-                    out.append(nres[len(nres)-1])
-                if investigation == "-":
-                    resid = nres[len(nres)-3] + "/" + nres[len(nres)-2]
-                else:
-                    try:
-                        resid = (nres[len(nres)-4] + "/" +
-                                 nres[len(nres)-3] + "/" + nres[len(nres)-2])
-                    except IndexError:
-                        pass
-                out = list(filter(None, out))
-                inputs = list(filter(None, inputs))
-            return render(request, 'results.html', context={
-                'inputs': inputs,
-                'outputs': out,
-                'workflow': workflow,
-                'storage': storage,
-                'resultid': resid,
-                'workflowid': wid})
+            if request.session.get('storage_type') == "SEEK":
+                resultid = resultid[0].replace('"', '').strip("[").strip("]")
+                results = get_seek_result(storage, resultid)
+                for rid, rname in results.items():
+                    if "_input_" in rname:
+                        inputs[rid] = rname
+                    elif ".ga" in rname:
+                        call(
+                            [
+                                "wget -O" + username + "/workflow.ga " +
+                                storage + "/data_files/" + rid +
+                                "/download?version=1"
+                            ], shell=True)
+                        workflow = read_workflow(username + "/workflow.ga")
+                        out[rid] = rname
+                        get_file_cmd = ("curl -X GET \"" + storage + "/data_files/" + rid + "\" -H \"accept: application/json\"")
+                        data_files = subprocess.Popen(
+                            [get_file_cmd],
+                            stdout=subprocess.PIPE,
+                            shell=True
+                        ).communicate()[0].decode()
+                        json_data_files = json.loads(data_files)
+                        if rname == json_data_files["data"]["attributes"]["title"]:
+                            wid = json_data_files["data"]["attributes"]["description"]
+                    else:
+                        out[rid] = rname
+                return render(request, 'results.html', context={
+                    'storagetype': request.session.get('storage_type'),
+                    'inputs': inputs,
+                    'outputs': out,
+                    'workflow': workflow,
+                    'storage': storage,
+                    'resultid': resultid,
+                    'workflowid': wid})
+            else:
+                result = get_results(group, resultid, investigations,
+                                    username, password, storage)
+                cid = 0
+                for r in result:
+                    if ".ga" in r:
+                        wf = True
+                        nres = r.split('/')
+                        cont = subprocess.Popen([
+                            "curl -s -k -u " + username + ":" + password + " " +
+                            storage + "/" + nres[len(nres) - 4] + "/" +
+                            nres[len(nres) - 3] + "/" + nres[len(nres) - 2] + "/" +
+                            nres[len(nres) - 1]
+                        ], stdout=subprocess.PIPE, shell=True
+                        ).communicate()[0].decode()
+                        with open(username + "/" + nres[len(nres)-1], "w") as ga:
+                            ga.write(cont)
+                        workflow = read_workflow(ga.name)
+                        workflowid = subprocess.Popen([
+                            "curl -s -k http://127.0.0.1:3030/ds/query -X POST "
+                            "--data 'query=SELECT DISTINCT ?workflowid FROM "
+                            "<http://127.0.0.1:3030/ds/data/" +
+                            username.replace('@', '') +
+                            "> { VALUES (?workflow) {(\"" + ga.name +
+                            "\")}{ ?s <http://127.0.0.1:3030/ds/data?graph=" +
+                            username.replace(
+                                '@', '') + "#workflowid> "
+                            "?workflowid . ?s "
+                            "<http://127.0.0.1:3030/ds/data?graph=" +
+                            username.replace('@', '') + "#workflow> ?workflow . } "
+                            "} ORDER BY (?workflowid)' -H "
+                            "'Accept: application/sparql-results+json,*/*;q=0.9'"
+                        ], stdout=subprocess.PIPE, shell=True
+                        ).communicate()[0].decode()
+                        wid = json.dumps(workflowid)
+                        wfid = json.loads(workflowid)
+                        wid = json.dumps(
+                            wfid["results"]["bindings"][0]["workflowid"]["value"])
+                    if not wf:
+                        wid = "0"
+                    if "input_" in r:
+                        nres = r.split('/')
+                        if nres[len(nres)-1] != "":
+                            inputs[str(cid)] = nres[len(nres)-1]
+                            cid += 1
+                    else:
+                        nres = r.split('/')
+                        if nres[len(nres)-1] != "":
+                            out[str(cid)] = nres[len(nres)-1]
+                            cid += 1
+                    if investigation == "-":
+                        resid = nres[len(nres)-3] + "/" + nres[len(nres)-2]
+                    else:
+                        try:
+                            resid = (nres[len(nres)-4] + "/" +
+                                    nres[len(nres)-3] + "/" + nres[len(nres)-2])
+                        except IndexError:
+                            pass
+                return render(request, 'results.html', context={
+                    'storagetype': request.session.get('storage_type'),
+                    'inputs': inputs,
+                    'outputs': out,
+                    'workflow': workflow,
+                    'storage': storage,
+                    'resultid': resid,
+                    'workflowid': wid})
         else:
             return HttpResponseRedirect(reverse('index'))
 
@@ -2480,6 +2575,28 @@ def get_results(group, resultid, investigations, username, password, storage):
     return result
 
 
+def get_seek_result(storage, assay):
+    assay = assay.strip("[").strip("]")
+    get_assays_cmd = ("curl -X GET \"" + storage + "\"/assays -H \"accept: application/json\"")
+    all_assays = subprocess.Popen([get_assays_cmd], stdout=subprocess.PIPE, shell=True).communicate()[0].decode()
+    json_assays = json.loads(all_assays)
+    fileidlist = []
+    results = {}
+    for ar in range(0, len(json_assays["data"])):
+        if json_assays["data"][ar]["attributes"]["title"] == assay:
+            assayid = json_assays["data"][ar]["id"]
+    get_assay_cmd = ("curl -X GET \"" + storage + "\"/assays/" + assayid + " -H \"accept: application/json\"")
+    selected_assay = subprocess.Popen([get_assay_cmd], stdout=subprocess.PIPE, shell=True).communicate()[0].decode()
+    json_assay = json.loads(selected_assay)
+    for df in range(0, len(json_assay["data"]["relationships"]["data_files"]["data"])):
+        fileidlist.append(json_assay["data"]["relationships"]["data_files"]["data"][df]["id"])
+    for fileid in fileidlist:
+        get_file_cmd = ("curl -X GET \"" + storage + "\"/data_files/" + fileid + " -H \"accept: application/json\"")
+        file_info = subprocess.Popen([get_file_cmd], stdout=subprocess.PIPE, shell=True).communicate()[0].decode()
+        json_file = json.loads(file_info)
+        results[json_file["data"]["id"]] = json_file["data"]["attributes"]["title"]
+    return results
+
 def logout(request):
     """Flush the exisiting session with the users login details.
 
@@ -2528,7 +2645,7 @@ def get_output(galaxyemail, galaxypass, server):
             status['new'] or
             status['upload']
         ):
-            time.sleep(60)
+            time.sleep(90)
             hist = gi.histories.show_history(historyid)
             state = hist['state_ids']
             dump = json.dumps(state)
@@ -2785,7 +2902,7 @@ def rerun_analysis(request):
             status['new'] or
             status['upload']
     ):
-        time.sleep(60)
+        time.sleep(90)
         hist = gi.histories.show_history(history_id)
         state = hist['state_ids']
         dump = json.dumps(state)

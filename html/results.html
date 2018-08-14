@@ -32,14 +32,19 @@
                 </span>
                 <th>Input File</th>
                 <th></th>
-                {% for input in inputs %}
+                {% for inputid, input in inputs.items %}
                     <tr>
                         <td>{{input}}</td>
                         <td>
-                            <a href="{{storage}}/{{resultid}}/{{input}}">
-                            <!--<a href="{{input}}">-->
-                                <button class="button">Download</button>
-                            </a>
+                            {% if storagetype == "SEEK" %}
+                                <a href="{{storage}}/data_files/{{inputid}}" target="_blank">
+                                    <button class="button">View / Download</button>
+                                </a>
+                            {% else %}
+                                <a href="{{storage}}/{{resultid}}/{{input}}">
+                                    <button class="button">View / Download</button>
+                                </a>
+                            {% endif %}
                         </td>
                     </tr>
                 {% endfor %}
@@ -54,16 +59,22 @@
                 <th>ID (workflow only)</th>
                 <th>Import (history) / Download (workflow)</th>
                 {% if outputs %}
-                    {% for output in outputs %}
-                        {% if ".ga" in output %}
+                    {% for outid, outname in outputs.items %}
+                        {% if ".ga" in outname %}
                             <tr>
-                                <td>{{output}}</td>
+                                <td>{{outname}}</td>
                                 <td id="workflowid">{{workflowid}}</td>
                                 <td>
-                                    <span id="ga" style="display: none">{{storage}}/{{resultid}}/{{output}}</span>
-                                    <a href="{{storage}}/{{resultid}}/{{output}}">
-                                        <button class="button">Download</button>
-                                    </a>
+                                    <span id="ga" style="display: none">{{storage}}/{{resultid}}/{{outid}}</span>
+                                    {% if storagetype == "SEEK" %}
+                                        <a href="{{storage}}/data_files/{{outid}}" target="_blank">
+                                            <button class="button">View / Download</button>
+                                        </a>
+                                    {% else %}
+                                        <a href="{{storage}}/{{resultid}}/{{outname}}">
+                                            <button class="button">View / Download</button>
+                                        </a>
+                                    {% endif %}
                                 </td>
                             </tr>
                         {% endif %}
@@ -121,14 +132,20 @@
             <th>Output File</th>
             <th></th>
             {% if outputs  %}
-                {% for output in outputs %}
-                    {% if ".ga" not in output %}
+                {% for outid, outname in outputs.items %}
+                    {% if ".ga" not in outname %}
                         <tr>
-                            <td>{{output}}</td>
+                            <td>{{outname}}</td>
                             <td>
-                                <a href="{{storage}}/{{resultid}}/{{output}}">
-                                    <button class="button">Download</button>
-                                </a>
+                                {% if storagetype == "SEEK" %}
+                                    <a href="{{storage}}/data_files/{{outid}}" target="_blank">
+                                        <button class="button">View / Download</button>
+                                    </a>
+                                {% else %}
+                                    <a href="{{storage}}/{{resultid}}/{{outname}}">
+                                        <button class="button">View / Download</button>
+                                    </a>
+                                {% endif %}
                             </td>
                         </tr>
                     {% endif %}
