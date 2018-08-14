@@ -2087,7 +2087,7 @@ def store_results(column, gi, datafiles, server, username, password, storage, wo
                         username.replace('@', '') + "#date> \"" + date +
                         "\" } }' -H 'Accept: text/plain,*/*;q=0.9'"
                     ], shell=True)
-            o += 1
+        o += 1
     if storagetype == "SEEK":
         study_search_query = (
             "curl -X GET \"" + storage + 
@@ -2150,7 +2150,7 @@ def store_results(column, gi, datafiles, server, username, password, storage, wo
                     seekupload(
                         username, password, storage, galaxyfile, 
                         username + "/" + galaxyfile,
-                        str(new_name), content_type, 1, projectid, 
+                        str(galaxyfile), content_type, 1, projectid, 
                         str(max(assay_id_list)), workflowid
                     )
 
