@@ -2414,10 +2414,11 @@ def show_results(request):
                     elif ".ga" in rname:
                         call(
                             [
-                                "wget -O" + username + "/workflow.ga " +
+                                "wget -O " + username + "/workflow.ga " +
                                 storage + "/data_files/" + rid +
                                 "/download?version=1"
-                            ], shell=True)
+                            ], shell=True
+                        )
                         workflow = read_workflow(username + "/workflow.ga")
                         out[rid] = rname
                         get_file_cmd = ("curl -X GET \"" + storage + "/data_files/" + rid + "\" -H \"accept: application/json\"")
