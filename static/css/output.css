@@ -27,8 +27,8 @@ p {
     float: none;
 }
 .resultDiv {
-    border-top: 10px solid #e7f3ff;
-    width: 30%;
+    border-top: 5px solid #21317F;
+    width: 46%;
 }
 #wrapper div {
     float: left;
@@ -66,20 +66,46 @@ p {
 }
 .tblresult th {
     background-color: #e7f3ff;
-    color: #333;
+    color: #21317F;
     padding: 15px 32px;
     word-break: normal;
+    white-space: nowrap;
+    border: 1px solid #000;
 }
 .tblresult tr:nth-child(odd) {
     background-color: #f2f2f2;
 }
 .tblresult td {
     color: #21317F;
-    padding: 3px;
+    padding: 8px;
     white-space: normal;
-    word-wrap: break-word;
+    word-wrap: normal;
+    /* white-space: nowrap; */
+    max-width: 100%;
+    border-right: 1px solid #000;
 }
 .tblresult {
-    border: 1px solid #e7f3ff;
+    border: 1px solid #000;
     table-layout: fixed;
+    margin: 0;
+    min-width: 50%;
+    max-width: 100%;
+    /* word-wrap: normal; */
+}
+#showresults {
+    width: 100%;
+    height: 50px;
+    font-size: 12pt;
+    background-color: #21317F;
+    color: #fff;
+}
+#resultsbutton {
+    text-align: center;
+}
+#rerunbutton {
+    width: 99%;
+    height: 50px;
+    font-size: 12pt;
+    background-color: #21317F;
+    color: #fff;
 }
