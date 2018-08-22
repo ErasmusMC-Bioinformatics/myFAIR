@@ -270,19 +270,20 @@ function sparqlQuery() {
             "PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> " +
             "PREFIX dcterms: <http://purl.org/dc/terms/> " +
             "PREFIX jerm: <http://jermontology.org/ontology/JERMOntology#> " +
-            "SELECT DISTINCT ?assayid (?assays AS ?result_assay) ?investigations ?studies  WHERE {" +
-                "?i dcterms:title ?investigations ; " +
+            "SELECT DISTINCT ?assayid (?assay AS ?result_assay) ?investigation ?study ?date  WHERE {" +
+                "?i dcterms:title ?investigation ; " +
                 "rdf:type jerm:Investigation ." +
                 "?i jerm:itemProducedBy ?projectid . " +
                 "?projectid dcterms:title ?project . " +
                 "?i jerm:hasPart ?studyid . " +
-                "?studyid dcterms:title ?studies . " +
+                "?studyid dcterms:title ?study . " +
                 "?studyid jerm:hasPart ?assayid . " +
-                "?assayid dcterms:title ?assays . " +
+                "?assayid dcterms:title ?assay . " +
+                "?assayid dcterms:created ?date . " +
                 "?file jerm:isPartOf ?assayid . " + 
                 "?file dcterms:title ?filetitle . " +
-                "FILTER regex(?studies, '" + RSEARCH + "', 'i') ." +
-                "FILTER regex(?assays, '__result__', 'i')}";
+                "FILTER regex(?study, '" + RSEARCH + "', 'i') ." +
+                "FILTER regex(?assay, '__result__', 'i')} ORDER BY DESC(?date)";
         } else {
             var query = "SELECT DISTINCT (?s as ?id) ?resultid ?investigation " +
             "?study ?date ?workflow ?historyid FROM " +
