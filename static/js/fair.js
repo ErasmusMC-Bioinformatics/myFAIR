@@ -3,7 +3,6 @@
 ** It also sends some important data to views.py to be able to 
 ** upload data to Galaxy.
 */
-// var count = 0;
 var USER = document.getElementById('user').innerHTML.replace('@', '');
 var SERVER = document.getElementById('storagename').innerHTML
 var STORAGETYPE = document.getElementById('storage-type').innerHTML
@@ -166,10 +165,7 @@ $(document).ready(function () {
             });
         }
     }
-    
     resultList = [studies]
-
-
     for (rl in resultList) {
         var service = encodeURI(
             SPARQL_ENDPOINT + resultList[rl] + '&format=json').replace(
@@ -199,9 +195,6 @@ $(document).ready(function () {
         });
     }
 });
-// Query the datafiles based on sample name, investigation name, 
-// study name or disease
-// Query the results based on investigation or study name
 function sparqlQuery() {
     $("#errorPanel").addClass('hidden');
     $("#infoPanel").addClass('hidden');
@@ -354,7 +347,6 @@ function fillTable(result) {
             table += '<th><a>' + entry + '</a></th>'
         }
     });
-    //    table += '<th>groups</th>'
     table += '</tr></thead><tbody>'
     var rownr = 1;
     result.results.bindings.forEach(function (value) {
@@ -446,6 +438,8 @@ function fillTable(result) {
             '<p>Select a result and press the Show results button</p>'
         );
     } else {
+        document.getElementById('workflow_select').style.display = "block";
+        document.getElementById('show_results').style.display = "none";
         $('#galaxy').html(
             '<select name="filetype" id="filetype" class="select-option">' +
             '<optgroup label="File Type:" style="color: #21317F;">' +
