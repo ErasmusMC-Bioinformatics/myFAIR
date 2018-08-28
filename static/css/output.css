@@ -1,40 +1,50 @@
+/* 
+ * output.css
+ * 
+ * This stylesheet defines the appearance of the resultpage.
+ * 
+ */
+
 body {
     font-family: "Courier New", Courier, monospace;
     font-size: 8pt;
 }
+
 h2 {
     margin: 20px;
 }
+
 p {
     margin: 10px;
 }
+
 #title {
     text-align: right;
 }
-/*
-** Div CSS:
-** Layout for all three divs
-** Input, Analysis and Output divs
-*/
+
 #wrapper {
     width: 90%;
     margin: 0 auto;
 }
+
 #wrapper:after {
     display: block;
-    height: 0px;
+    height: 0;
     clear: both;
     float: none;
 }
+
 .resultDiv {
-    border-top: 5px solid #21317F;
+    border-top: 5px solid #21317f;
     width: 46%;
 }
+
 #wrapper div {
     float: left;
     word-break: break-all;
     margin-right: 3%;
 }
+
 .button {
     background-color: #fff;
     color: #333;
@@ -47,65 +57,77 @@ p {
     word-break: break-all;
     width: 99%;
     cursor: pointer;
+    outline-color: #21317f;
 }
+
 .button:hover {
     background-color: #fff;
-    border: 1px solid #21317F;
+    border: 1px solid #21317f;
     color: #000;
-    -webkit-box-shadow: inset 0 2px 2px rgba(0,0,0,.075),0 0 12px rgba(102,175,233,.6);
-    box-shadow: inset 0 2px 2px rgba(0,0,0,.075),0 0 12px rgba(102,175,233,.6);
+    -webkit-box-shadow: inset 0 2px 2px rgba(0, 0, 0, .075), 0 0 12px rgba(102, 175, 233, .6);
+    box-shadow: inset 0 2px 2px rgba(0, 0, 0, .075), 0 0 12px rgba(102, 175, 233, .6);
 }
+
 .button:active {
     background-color: #fff;
-  border: 1px solid #e7f3ff;
-  color: #333;
-  outline: none;
+    border: 1px solid #e7f3ff;
+    color: #333;
 }
-#output-files, #input-files, #analysis-info {
+
+#output-files,
+#input-files,
+#analysis-info {
     margin-bottom: 25px;
 }
+
 .tblresult th {
     background-color: #e7f3ff;
-    color: #21317F;
+    color: #21317f;
     padding: 15px 32px;
     word-break: normal;
     white-space: nowrap;
     border: 1px solid #000;
 }
+
 .tblresult tr:nth-child(odd) {
     background-color: #f2f2f2;
 }
+
 .tblresult td {
-    color: #21317F;
+    color: #21317f;
     padding: 8px;
     white-space: normal;
     word-wrap: normal;
-    /* white-space: nowrap; */
     max-width: 100%;
     border-right: 1px solid #000;
 }
+
 .tblresult {
     border: 1px solid #000;
     table-layout: fixed;
     margin: 0;
     min-width: 50%;
     max-width: 100%;
-    /* word-wrap: normal; */
 }
+
 #showresults {
     width: 100%;
     height: 50px;
     font-size: 12pt;
-    background-color: #21317F;
+    background-color: #21317f;
     color: #fff;
 }
+
 #resultsbutton {
     text-align: center;
+    outline-color: #21317f;
 }
+
 #rerunbutton {
     width: 99%;
     height: 50px;
     font-size: 12pt;
-    background-color: #21317F;
+    background-color: #21317f;
     color: #fff;
+    outline-color: #21317f;
 }
