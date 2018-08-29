@@ -185,27 +185,34 @@
         <button id="rerunbutton" class="button" name="rerun" onclick="rerun_analysis()">
             <img src="{% static 'img/rerun.png' %}" alt="" class="img-thumbnail" width="40" height="40">Rerun
         </button>
-        <!-- <button id="rerunbutton" class="button" name="rerun" onclick="rerun_analysis()">Run Again</button> -->
         <br>
         <br>
-        <div id="running" style="display: none" align="center">
-            <img id="loadingImage" src="{% static 'img/loading.gif' %}" width="375" height="187.5">
-        </div>
-        <div id="finished" style="display:none" align="center">
-            <img id="checkImage" src="{% static 'img/check.png' %}" width="125" height="125">
-        </div>
-        <div id="error" style="display:none" align="center">
-            <img id="errorImage" src="{% static 'img/error.png' %}" width="125" height="125">
-            <br />
-            <p id="errormessage">
-                Oops...wait a few seconds or reload the page to try again.
-            </p>
-        </div>
     </div>
 </div>
 <br />
 <div id="resultsbutton">
     <button id="showresults" class="button" onclick="myFunction()">Show Results</button>
+</div>
+<div id="running" style="display: none" align="center">
+    <img id="loadingImage" src="{% static 'img/loading.gif' %}" width="500" height="250">
+    <p style="text-align:center;">
+        Please wait...See Galaxy page for more details.
+    </p>
+</div>
+<div id="finished" style="display:none" align="center">
+    <img id="checkImage" src="{% static 'img/check.png' %}" width="256" height="256">
+    <p style="text-align:center">
+        Finished uploading data files.<br>
+        Please check the Galaxy page for more details.
+    </p>
+</div>
+<div id="error" style="display:none" align="center">
+    <img id="errorImage" src="{% static 'img/error.png' %}" width="273.5" height="273.5">
+    <br />
+    <p style="text-align:center;">
+        Oops...Something went wrong.<br>
+        Wait a few seconds or reload the page to try again.
+    </p>
 </div>
 </div>
 {% endblock %}

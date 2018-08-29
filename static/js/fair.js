@@ -298,7 +298,6 @@ function sparqlQuery() {
             "', 'i'))} ORDER BY DESC(?date)";
         }
     }
-    
     var isValueMissing = false;
     if (ISEARCH === '' && SSEARCH === '' && ASEARCH === '' && RSEARCH === '') {
         var errorMessage = ("<strong>Input error : " +
@@ -332,7 +331,6 @@ function sparqlQuery() {
         });
     }
 }
-// Fill table with search results
 function fillTable(result) {
     $("#infoPanel").addClass('hidden');
     $("#noResultPanel").addClass('hidden');
@@ -419,7 +417,6 @@ function fillTable(result) {
         previousButtonClass: "btn btn-primary btn-xs",
         nextButtonClass: "btn btn-primary btn-xs"
     });
-    // Check if column exists
     function hasColumn(tblSel, content) {
         var ths = document.querySelectorAll(tblSel + ' th');
         return Array.prototype.some.call(ths, function (el) {
@@ -493,7 +490,6 @@ function fillTable(result) {
         $("#results_table").addClass('hidden');
     }
 }
-// Get selected data by checking the checkboxes
 function postdata(g) {
     document.getElementById('loading').style.display = "block";
     var workflowid = document.getElementById('workflow').value;
@@ -607,10 +603,7 @@ function getoutput() {
         }
     });
 }
-// Refresh the page
 function refresh() {
-    // window.location.reload();
-    // window.parent.window.location.reload();
     window.location.href = "";
 }
 // Loop through the results_table and get the pid (first column)
@@ -695,6 +688,8 @@ function rerun_analysis() {
     }
     var jsonURLS = JSON.stringify(urls);
     document.getElementById('running').style.display = "block";
+    document.getElementById('wrapper').style.display = "none";
+    document.getElementById('showresults').style.display = "none";
     $.ajax({
         type: 'POST',
         url: "rerun",
@@ -708,12 +703,13 @@ function rerun_analysis() {
             setTimeout(refresh, 5000);
         },
         error: function (data) {
+            document.getElementById('running').style.display = "none";
             document.getElementById('error').style.display = "block";
             setTimeout(refresh, 5000);
         },
     });
 }
-// Rerun the analysis with information from the results
+// Import an existing Galaxy history.
 function import_history() {
     tar = document.getElementById("tar").innerText;
     resultid = document.getElementById("title").innerText;
