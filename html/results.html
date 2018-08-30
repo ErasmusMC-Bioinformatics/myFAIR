@@ -41,8 +41,10 @@
         <h3>Input Files</h3>
         <p>
             <table class="tblresult" id="input-files">
-                <span id="input-list" style="display: none">
-                    {{inputs}}
+                <span id="input-list" style="display: none;">
+                    {% for key, value in inputs.items %}
+                        {{value}}<br>
+                    {% endfor %}
                 </span>
                 <th>Filename</th>
                 <th>

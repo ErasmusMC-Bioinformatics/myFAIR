@@ -674,19 +674,22 @@ function getrow(r) {
 }
 // Rerun the analysis with information from the results
 function rerun_analysis() {
+    document.getElementById('input-list').style.display = "block";
     wid = document.getElementById("workflowid").innerText;
     inputs = document.getElementById("input-list").innerText;
-    inputs = inputs.split(',');
+    inputs = inputs.split('\n');
     resultid = document.getElementById("title").innerText;
-    var urls = new Array;
+    var urls = [];
     for (i = 0; i <= (inputs.length - 1); i++) {
-        urls.push(
-            resultid.replace(" ", "") + "/" +
-            inputs[i].replace(" ", "").replace("\n", "").replace(
-                "'", "").replace("[", "").replace("]", "").replace("'", "")
-        )
+        if (inputs[i] !== "") {
+            urls.push(
+                (resultid.replace(" ", "").replace("\n", "") + "/" +
+                    inputs[i].replace(" ", "").replace("\n", "").replace(
+                        "'", "").replace("[", "").replace("]", "").replace("'", ""))
+            )
+        }
     }
-    var jsonURLS = JSON.stringify(urls);
+    var jsonURLS = JSON.stringify(urls)
     document.getElementById('running').style.display = "block";
     document.getElementById('wrapper').style.display = "none";
     document.getElementById('showresults').style.display = "none";

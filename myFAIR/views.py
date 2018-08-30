@@ -102,8 +102,8 @@ def index(request):
         request -- Getting the user details from request.session.
     """
     if (request.method == 'POST' and
-        request.session.get('username') is None
-    ):
+            request.session.get('username') is None
+            ):
         login(request)
     else:
         pass
@@ -112,7 +112,6 @@ def index(request):
         request.session.get('username') == ""
     ):
         err = ""
-        # login(request)
         return render_to_response('login.html', context={
             'error': err})
     else:
@@ -206,7 +205,7 @@ def index(request):
 def seekupload(username, password, storage, title, file, filename,
                content_type, userid, projectid, assayid, description):
     """Upload data file to SEEK server using the selected ISA IDs.
-    
+
     Arguments:
         request -- Getting information to  upload data files to the SEEK server
     """
@@ -326,7 +325,7 @@ def create_study(username, password, server, userid, projectid,
 def create_assay(username, password, server, userid, projectid, studyid,
                  title, description, assay_type, technology_type, assayname):
     """Creates a new assay in SEEK.
-    
+
     Arguments:
         username {str} -- SEEK Login name
         password {str} -- SEEK password
@@ -352,19 +351,20 @@ def create_assay(username, password, server, userid, projectid, studyid,
         "{ \\\"title\\\": \\\"" + title + "\\\", "
         "\\\"assay_class\\\": { \\\"key\\\": \\\"EXP\\\" }, "
         "\\\"assay_type\\\": { \\\"uri\\\": \\\"" + assay_type + "\\\" }, "
-        "\\\"technology_type\\\": { \\\"uri\\\": \\\"" + technology_type + "\\\" }, "
+        "\\\"technology_type\\\": { \\\"uri\\\": \\\"" +
+        technology_type + "\\\" }, "
         "\\\"description\\\": \\\"" + description + "\\\", "
         "\\\"policy\\\": "
         "{ \\\"access\\\": \\\"download\\\", "
         "\\\"permissions\\\": [ { "
         "\\\"resource\\\": "
-        "{ \\\"id\\\": \\\"" + str(projectid) +"\\\", "
+        "{ \\\"id\\\": \\\"" + str(projectid) + "\\\", "
         "\\\"type\\\": \\\"projects\\\" }, "
         "\\\"access\\\": \\\"view\\\" } ] } }, "
         "\\\"relationships\\\": "
         "{ \\\"study\\\": "
         "{ \\\"data\\\": "
-        "{ \\\"id\\\": \\\"" + str(studyid) +"\\\", "
+        "{ \\\"id\\\": \\\"" + str(studyid) + "\\\", "
         "\\\"type\\\": \\\"studies\\\" } }, "
         "\\\"creators\\\": "
         "{ \\\"data\\\": [ { "
@@ -410,9 +410,10 @@ def seek(request):
         [get_userid_query],
         stdout=subprocess.PIPE,
         shell=True).communicate()[0].decode()
-    json_user_ids= json.loads(user_ids)
+    json_user_ids = json.loads(user_ids)
     for usr in range(0, len(json_user_ids["data"])):
-        user_dict[json_user_ids["data"][usr]["id"]] = json_user_ids["data"][usr]["attributes"]["title"]
+        user_dict[json_user_ids["data"][usr]["id"]
+                  ] = json_user_ids["data"][usr]["attributes"]["title"]
     get_projects = "curl -s -X GET \"" + \
         request.session.get("storage") + \
         "/projects\" -H \"accept: application/json\""
@@ -1258,9 +1259,6 @@ def get_input_data(galaxyemail, galaxypass, server):
     Returns:
         list -- Input files from the Galacxy history.
         int -- The amount of input datasets in the history.
-    
-    TODO: Change dataset ID and name to a dictionary and call when uploading
-    to Galaxy.
     """
     gi = GalaxyInstance(url=server, email=galaxyemail, password=galaxypass)
     history_id = get_history_id(galaxyemail, galaxypass, server)
@@ -1527,10 +1525,8 @@ def split_data_files(username, filename, control, test):
 
 
 def make_data_files(gi, files, username, password, galaxyemail, galaxypass,
-                    control, test, history_id, filetype, dbkey):
+                    control, test, history_id, filetype, dbkey, storagetype):
     """Create datafiles and send them to the Galaxy server.
-
-    TODO: Store Galaxy results in SEEK.
 
     Arguments:
         gi {GalaxyInstance} -- The Galaxy Instance.
@@ -1544,21 +1540,25 @@ def make_data_files(gi, files, username, password, galaxyemail, galaxypass,
         history_id {str} -- The Galaxy history ID to send files to.
         filetype {str} -- The filetype option when sending data to Galaxy.
         dbkey {str} -- The genome db to use in Galaxy.
+        storagetype {str} -- Checks if storage is in Owncloud or SEEK.
     """
     uploaded_files = []
     ftp = gi.config.get_config()["ftp_upload_site"]
     if "bioinf-galaxian" in ftp:
         ftp = "ftp://bioinf-galaxian.erasmusmc.nl:23"
     for file in files:
-        if "localhost" in file:
-            get_file_info = ("curl -X GET \"" + file + "\" -H \"accept: application/json\"")
-            file_info = subprocess.Popen([get_file_info], stdout=subprocess.PIPE, shell=True).communicate()[0].decode()
+        if storagetype == "SEEK":
+            get_file_info = ("curl -X GET \"" + file +
+                             "\" -H \"accept: application/json\"")
+            file_info = subprocess.Popen(
+                [get_file_info], stdout=subprocess.PIPE, shell=True).communicate()[0].decode()
             json_file_info = json.loads(file_info)
             for v in range(0, len(json_file_info["data"]["attributes"]["versions"])):
                 file_url = json_file_info["data"]["attributes"]["versions"][v]["url"]
                 filename = json_file_info["data"]["attributes"]["content_blobs"][0]["original_filename"]
             file_url = file_url.replace('?', '/download?')
-            call(["curl -L " + file_url + " -o " + username + "/input_" + filename], shell=True)
+            call(["curl -L " + file_url + " -o " +
+                  username + "/input_" + filename], shell=True)
         else:
             nfile = str(file).split('/')
             filename = nfile[len(nfile)-1]
@@ -1594,7 +1594,7 @@ def make_data_files(gi, files, username, password, galaxyemail, galaxypass,
             call(["rm", ndfilea.name])
             call(["rm", ndfileb.name])
         else:
-            if "localhost" in file:
+            if storagetype == "SEEK":
                 check_call([
                     "lftp -u " + galaxyemail + ":" + galaxypass + " " + ftp +
                     " -e \"put " + username + "/input_" + filename + "; bye\""
@@ -1646,7 +1646,6 @@ def make_data_files(gi, files, username, password, galaxyemail, galaxypass,
                     ], shell=True)
                 except subprocess.CalledProcessError:
                     pass
-            break
 
 
 def split_meta_files(username, metadatafile, control, test):
@@ -1780,11 +1779,13 @@ def make_meta_files(gi, mfiles, username, password, galaxyemail,
                 not status['upload']
         ):
             for uf in uploaded_files:
-                check_call([
-                    "lftp -u " + galaxyemail + ":" + galaxypass + " " + ftp +
-                    " -e \"rm -r " + uf + "; bye\""
-                ], shell=True)
-            break
+                try:
+                    check_call([
+                        "lftp -u " + galaxyemail + ":" + galaxypass + " " + ftp +
+                        " -e \"rm -r " + uf + "; bye\""
+                    ], shell=True)
+                except subprocess.CalledProcessError:
+                    pass
 
 
 @csrf_exempt
@@ -1836,13 +1837,15 @@ def upload(request):
                             request.session.get('password'),
                             request.session.get('galaxyemail'),
                             request.session.get('galaxypass'),
-                            control, test, history_id, filetype, dbkey)
+                            control, test, history_id, filetype, dbkey,
+                            request.session.get('storage_type'))
         else:
             make_data_files(gi, files, request.session.get('username'),
                             request.session.get('password'),
                             request.session.get('galaxyemail'),
                             request.session.get('galaxypass'),
-                            control, test, history_id, filetype, dbkey)
+                            control, test, history_id, filetype, dbkey,
+                            request.session.get('storage_type'))
             make_meta_files(gi, mfiles, request.session.get('username'),
                             request.session.get('password'),
                             request.session.get('galaxyemail'),
@@ -1862,7 +1865,7 @@ def upload(request):
                     mydict[label] = gi.workflows.get_workflow_inputs(
                         workflowid, label=label)[0]
             in_count = 0
-            for k, v in mydict.items():                
+            for k, v in mydict.items():
                 datasets = get_input_data(
                     request.session.get('galaxyemail'),
                     request.session.get('galaxypass'),
@@ -1881,25 +1884,25 @@ def upload(request):
                 request.session.get('username'),
                 True)
             datafiles = get_output(request.session.get('galaxyemail'),
-                                request.session.get('galaxypass'),
-                                request.session.get('server'))
+                                   request.session.get('galaxypass'),
+                                   request.session.get('server'))
             store_results(1, gi, datafiles, request.session.get('server'),
-                        request.session.get('username'),
-                        request.session.get('password'),
-                        request.session.get('storage'), workflowid,
-                        groups, resultid, investigations, date, history_id, 
-                        request.session.get("storage_type"))
+                          request.session.get('username'),
+                          request.session.get('password'),
+                          request.session.get('storage'), workflowid,
+                          groups, resultid, investigations, date, history_id,
+                          request.session.get("storage_type"))
             store_results(3, gi, datafiles, request.session.get('server'),
-                        request.session.get('username'),
-                        request.session.get('password'),
-                        request.session.get('storage'), workflowid,
-                        groups, resultid, investigations, date, history_id,
-                        request.session.get("storage_type"))
+                          request.session.get('username'),
+                          request.session.get('password'),
+                          request.session.get('storage'), workflowid,
+                          groups, resultid, investigations, date, history_id,
+                          request.session.get("storage_type"))
             if request.session.get("storage_type") != "SEEK":
                 ga_store_results(request.session.get('username'),
-                                request.session.get('password'), workflowid,
-                                request.session.get('storage'),
-                                resultid, groups, investigations)
+                                 request.session.get('password'), workflowid,
+                                 request.session.get('storage'),
+                                 resultid, groups, investigations)
                 call(["rm", request.session.get('username') + "/input_test"])
             return render_to_response('results.html', context={
                 'workflowid': workflowid,
@@ -1917,13 +1920,13 @@ def upload(request):
             #         history_id, make_collection(data_ids))
             ug_store_results(
                 gi,
-                request.session.get('galaxyemail'), 
+                request.session.get('galaxyemail'),
                 request.session.get('galaxypass'),
-                request.session.get('server'), 
+                request.session.get('server'),
                 workflowid,
-                request.session.get('username'), 
+                request.session.get('username'),
                 request.session.get('password'),
-                request.session.get('storage'), 
+                request.session.get('storage'),
                 groups, investigations, date, history_id)
             return HttpResponseRedirect(reverse("index"))
 
@@ -1955,8 +1958,9 @@ def make_collection(data_ids):
     return collection
 
 
-def store_results(column, gi, datafiles, server, username, password, storage, workflowid,
-                  groups, resultid, investigations, date, historyid, storagetype):
+def store_results(column, gi, datafiles, server, username, password, storage,
+                  workflowid, groups, resultid, investigations, date,
+                  historyid, storagetype):
     """Store input and output files that where created or used in a
     Galaxy workflow.
 
@@ -2090,7 +2094,7 @@ def store_results(column, gi, datafiles, server, username, password, storage, wo
         o += 1
     if storagetype == "SEEK":
         study_search_query = (
-            "curl -X GET \"" + storage + 
+            "curl -X GET \"" + storage +
             "/studies\" -H \"accept: application/json\""
         )
         json_studies = subprocess.Popen(
@@ -2148,9 +2152,9 @@ def store_results(column, gi, datafiles, server, username, password, storage, wo
                     assay_id_list.append(int(assays["data"][ail]["id"]))
                 for galaxyfile in os.listdir(username):
                     seekupload(
-                        username, password, storage, galaxyfile, 
+                        username, password, storage, galaxyfile,
                         username + "/" + galaxyfile,
-                        str(galaxyfile), content_type, 1, projectid, 
+                        str(galaxyfile), content_type, 1, projectid,
                         str(max(assay_id_list)), workflowid
                     )
 
@@ -2166,7 +2170,7 @@ def ga_store_results(username, password, workflowid, storage,
         storage {str} -- The URL for the storage location
         resultid {str} -- The result ID.
         groups {list} -- A list of studies.
-        groups {list} -- A list of investigations.
+        investigations {list} -- A list of investigations.
     """
     for filename in os.listdir(username + "/"):
         if ".ga" in filename:
@@ -2202,7 +2206,6 @@ def ga_store_results(username, password, workflowid, storage,
                         workflowid +
                         "\" } }' -H 'Accept: text/plain,*/*;q=0.9'"
                     ], shell=True)
-            # call(["rm", username + "/" + new_name])
 
 
 def ug_store_results(gi, galaxyemail, galaxypass, server, workflowid,
@@ -2386,8 +2389,6 @@ def show_results(request):
     username = request.session.get('username')
     password = request.session.get('password')
     storage = request.session.get('storage')
-    # groups = []
-    # results = []
     inputs = {}
     out = {}
     result = ""
@@ -2421,15 +2422,18 @@ def show_results(request):
                         )
                         workflow = read_workflow(username + "/workflow.ga")
                         out[rid] = rname
-                        get_file_cmd = ("curl -X GET \"" + storage + "/data_files/" + rid + "\" -H \"accept: application/json\"")
+                        get_file_cmd = (
+                            "curl -X GET \"" + storage + "/data_files/" + rid + "\" -H \"accept: application/json\"")
                         data_files = subprocess.Popen(
                             [get_file_cmd],
                             stdout=subprocess.PIPE,
                             shell=True
                         ).communicate()[0].decode()
                         json_data_files = json.loads(data_files)
-                        if rname == json_data_files["data"]["attributes"]["title"]:
-                            wid = json_data_files["data"]["attributes"]["description"]
+                        if rname == (json_data_files["data"]
+                                     ["attributes"]["title"]):
+                            wid = (json_data_files["data"]
+                                   ["attributes"]["description"])
                     else:
                         out[rid] = rname
                 return render(request, 'results.html', context={
@@ -2442,7 +2446,7 @@ def show_results(request):
                     'workflowid': wid})
             else:
                 result = get_results(group, resultid, investigations,
-                                    username, password, storage)
+                                     username, password, storage)
                 cid = 0
                 for r in result:
                     if ".ga" in r:
@@ -2469,7 +2473,8 @@ def show_results(request):
                                 '@', '') + "#workflowid> "
                             "?workflowid . ?s "
                             "<http://127.0.0.1:3030/ds/data?graph=" +
-                            username.replace('@', '') + "#workflow> ?workflow . } "
+                            username.replace('@', '') +
+                            "#workflow> ?workflow . } "
                             "} ORDER BY (?workflowid)' -H "
                             "'Accept: application/sparql-results+json,*/*;q=0.9'"
                         ], stdout=subprocess.PIPE, shell=True
@@ -2477,7 +2482,9 @@ def show_results(request):
                         wid = json.dumps(workflowid)
                         wfid = json.loads(workflowid)
                         wid = json.dumps(
-                            wfid["results"]["bindings"][0]["workflowid"]["value"])
+                            (wfid["results"]["bindings"]
+                             [0]["workflowid"]["value"])
+                        )
                     if not wf:
                         wid = "0"
                     if "input_" in r:
@@ -2495,7 +2502,7 @@ def show_results(request):
                     else:
                         try:
                             resid = (nres[len(nres)-4] + "/" +
-                                    nres[len(nres)-3] + "/" + nres[len(nres)-2])
+                                     nres[len(nres)-3] + "/" + nres[len(nres)-2])
                         except IndexError:
                             pass
                 return render(request, 'results.html', context={
@@ -2512,7 +2519,7 @@ def show_results(request):
 
 def get_results(group, resultid, investigations, username, password, storage):
     """Gets the result selected by the user.
-    
+
     Arguments:
         group {str} -- The group ID of the selected result.
         resultid {str} -- The result ID of the selected result.
@@ -2521,7 +2528,7 @@ def get_results(group, resultid, investigations, username, password, storage):
         username {str} -- The username of the logged in user.
         password {str} -- Password of the logged in user.
         storage {str} -- The file location of the selected result.
-    
+
     Returns:
         list -- A list of all files and folders of the selected result.
     """
@@ -2578,25 +2585,37 @@ def get_results(group, resultid, investigations, username, password, storage):
 
 def get_seek_result(storage, assay):
     assay = assay.strip("[").strip("]")
-    get_assays_cmd = ("curl -X GET \"" + storage + "\"/assays -H \"accept: application/json\"")
-    all_assays = subprocess.Popen([get_assays_cmd], stdout=subprocess.PIPE, shell=True).communicate()[0].decode()
+    get_assays_cmd = ("curl -X GET \"" + storage +
+                      "\"/assays -H \"accept: application/json\"")
+    all_assays = subprocess.Popen(
+        [get_assays_cmd],
+        stdout=subprocess.PIPE, shell=True).communicate()[0].decode()
     json_assays = json.loads(all_assays)
     fileidlist = []
     results = {}
     for ar in range(0, len(json_assays["data"])):
         if json_assays["data"][ar]["attributes"]["title"] == assay:
             assayid = json_assays["data"][ar]["id"]
-    get_assay_cmd = ("curl -X GET \"" + storage + "\"/assays/" + assayid + " -H \"accept: application/json\"")
-    selected_assay = subprocess.Popen([get_assay_cmd], stdout=subprocess.PIPE, shell=True).communicate()[0].decode()
+    get_assay_cmd = ("curl -X GET \"" + storage + "\"/assays/" +
+                     assayid + " -H \"accept: application/json\"")
+    selected_assay = subprocess.Popen(
+        [get_assay_cmd],
+        stdout=subprocess.PIPE, shell=True).communicate()[0].decode()
     json_assay = json.loads(selected_assay)
     for df in range(0, len(json_assay["data"]["relationships"]["data_files"]["data"])):
-        fileidlist.append(json_assay["data"]["relationships"]["data_files"]["data"][df]["id"])
+        fileidlist.append(
+            json_assay["data"]["relationships"]["data_files"]["data"][df]["id"])
     for fileid in fileidlist:
-        get_file_cmd = ("curl -X GET \"" + storage + "\"/data_files/" + fileid + " -H \"accept: application/json\"")
-        file_info = subprocess.Popen([get_file_cmd], stdout=subprocess.PIPE, shell=True).communicate()[0].decode()
+        get_file_cmd = ("curl -X GET \"" + storage + "\"/data_files/" +
+                        fileid + " -H \"accept: application/json\"")
+        file_info = subprocess.Popen(
+            [get_file_cmd],
+            stdout=subprocess.PIPE, shell=True).communicate()[0].decode()
         json_file = json.loads(file_info)
-        results[json_file["data"]["id"]] = json_file["data"]["attributes"]["title"]
+        results[json_file["data"]["id"]
+                ] = json_file["data"]["attributes"]["title"]
     return results
+
 
 def logout(request):
     """Flush the exisiting session with the users login details.
@@ -2685,21 +2704,17 @@ def get_output(galaxyemail, galaxypass, server):
 @csrf_exempt
 def import_galaxy_history(request):
     """Download the Galaxy history .tar file from the storage location.
-    
+
     Arguments:
         request -- Request data to download the Galaxy history.
     """
-    # gi = GalaxyInstance(
-    #     url=request.session.get("server"), 
-    #     email=request.session.get("galaxyemail"), 
-    #     password=request.session.get("galaxypass"))
     username = request.session.get("username")
     password = request.session.get("password")
     tar = request.POST.get("tar")
     resultid = request.POST.get("resultid").strip("\n")
     call([
-        "curl -s -k -u " + username + ":" + password + " " + 
-        request.session.get("storage") + "/" + resultid + "/" + tar + 
+        "curl -s -k -u " + username + ":" + password + " " +
+        request.session.get("storage") + "/" + resultid + "/" + tar +
         " --output " + str(Path.home()) + "/" + username + "/" + tar
     ], shell=True)
     return HttpResponseRedirect(reverse("results"))
@@ -2721,7 +2736,7 @@ def store_history(request):
         gi = GalaxyInstance(url=server,
                             email=request.session.get("galaxyemail"),
                             password=request.session.get("galaxypass"))
-        home = str(Path.home())+ "/"
+        home = str(Path.home()) + "/"
         username = request.POST.get('username')
         password = request.POST.get('password')
         storage = request.POST.get('storage')
@@ -2816,8 +2831,6 @@ def store_history(request):
                     ], shell=True, stdout=subprocess.PIPE)
                 call(["rm", username + "/" + new_name])
             call(["rm", home + username + "/" + shaname])
-            # ug_context = {'outputs': output, 'inputs': input_ids,
-                        #   'hist': hist, 'server': server}
             return HttpResponseRedirect(reverse('index'))
 
 
@@ -2842,54 +2855,197 @@ def read_workflow(filename):
     return steplist
 
 
-@csrf_exempt
-def rerun_analysis(request):
-    """Rerun an analysis stored in the triple store.
-    Search for a result on the homepage and view the results.
-    In the resultspage there is an option to rerun the analysis.
+def rerun_seek(gi, storage, resultid, galaxyemail, galaxypass, ftp,
+               username, history_id):
+    """Upload input files from a previous run to the Galaxy server.
+    Get the JSON data from the Galaxy workflow file and return this to
+    the rerun function to import the workflow.
+
+    Arguments:
+        storage {str} -- SEEK URL to search an download the data files.
+        resultid {str} -- The ID of the result to rerun.
+
+    Returns:
+        str -- A JSON string of the Galaxy workflow file.
+    """
+    df_id_list = []
+    uploaded_files = []
+    gacont = None
+    get_assays = (
+        "curl -X GET \"" +
+        storage + "/assays\" "
+        "-H \"accept: application/json\""
+    )
+    assays = subprocess.Popen(
+        [get_assays], stdout=subprocess.PIPE, shell=True
+    ).communicate()[0].decode()
+    json_assays = json.loads(assays)
+    for x in range(0, len(json_assays["data"])):
+        assay_title = str(json_assays["data"][x]["attributes"]["title"])
+        if resultid.strip("\n") == assay_title.strip("\n"):
+            aid = json_assays["data"][x]["id"]
+    get_result_assay = (
+        "curl -X GET \"" +
+        storage + "/assays/" + str(aid) + "\" "
+        "-H \"accept: application/json\""
+    )
+    result_assay = subprocess.Popen(
+        [get_result_assay], stdout=subprocess.PIPE, shell=True
+    ).communicate()[0].decode()
+    json_result_assay = json.loads(result_assay)
+    data_files_dict = json_result_assay["data"]["relationships"]["data_files"]
+    for dx in range(0, len(data_files_dict["data"])):
+        df_id_list.append(data_files_dict["data"][dx]["id"])
+    for did in df_id_list:
+        get_data_file = (
+            "curl -X GET \"" +
+            storage + "/data_files/" + str(did) + "\" "
+            "-H \"accept: application/json\""
+        )
+        data_file = subprocess.Popen(
+            [get_data_file], stdout=subprocess.PIPE, shell=True
+        ).communicate()[0].decode()
+        json_result_data = json.loads(data_file)
+        if "input_" in json_result_data["data"]["attributes"]["title"]:
+            dataid = json_result_data["data"]["id"]
+            filename = (json_result_data["data"]["attributes"]
+                        ["content_blobs"][0]["original_filename"])
+            call(
+                [
+                    "wget -O " + username + "/" + filename + " " +
+                    storage + "/data_files/" + dataid + "/download"
+                ], shell=True
+            )
+            check_call([
+                "lftp -u " + galaxyemail + ":" + galaxypass + " " + ftp +
+                " -e \"put " + username + "/" + filename + "; bye\""], shell=True)
+            gi.tools.upload_from_ftp(
+                filename, history_id, file_type="auto", dbkey="?")
+            uploaded_files.append(filename)
+            call(["rm", username + "/" + filename])
+        if ".ga" in json_result_data["data"]["attributes"]["title"]:
+            workflowfileid = json_result_data["data"]["id"]
+            gacont = subprocess.Popen(
+                ["curl -s -k " + storage + "/data_files/" +
+                    workflowfileid + "/download"],
+                stdout=subprocess.PIPE, shell=True).communicate()[0].decode()
+    hist = gi.histories.show_history(history_id)
+    state = hist['state_ids']
+    dump = json.dumps(state)
+    status = json.loads(dump)
+    # Stop process after workflow is done
+    while (
+            status['running'] or
+            status['queued'] or
+            status['new'] or
+            status['upload']
+    ):
+        time.sleep(90)
+        hist = gi.histories.show_history(history_id)
+        state = hist['state_ids']
+        dump = json.dumps(state)
+        status = json.loads(dump)
+        if (
+                not status['running'] and
+                not status['queued'] and
+                not status['new'] and
+                not status['upload']
+        ):
+            for uf in uploaded_files:
+                try:
+                    check_call([
+                        "lftp -u " + galaxyemail + ":" + galaxypass + " " + ftp +
+                        " -e \"rm -r " + uf + "; bye\""
+                    ], shell=True)
+                except subprocess.CalledProcessError:
+                    pass
+    return gacont
+
+
+def rerun_seek_workflow(request, gi, workflowid, history_id, gacont):
+    """Start the Galaxy workflow after uploading the data files to the 
+    Galaxy server. 
     
     Arguments:
-        request -- A request to receive information to rerun previously
-        generated results.
+        request -- Request information from the rerun_analysis function.
+        gi {GalaxyInstance} -- Galaxy instance of the logged in user.
+        workflowid {str} -- ID of the workflow used in this analysis.
+        history_id {str} -- ID of the new Galaxy history.
+        gacont {str} -- JSON content of the workflow used in the analysis.
     """
-    workflowid = request.POST.get('workflowid')
-    workflowid = workflowid.replace('"', '')
-    resultid = request.POST.get('resultid')
-    gi = GalaxyInstance(url=request.session.get('server'),
-                        email=request.session.get('galaxyemail'),
-                        password=request.session.get("galaxypass"))
-    ftp = gi.config.get_config()["ftp_upload_site"]
-    if "bioinf-galaxian" in ftp:
-        ftp = "ftp://bioinf-galaxian.erasmusmc.nl:23"
-    galaxyemail = request.session.get("galaxyemail")
-    galaxypass = request.session.get("galaxypass")
+    with open(request.session.get('username') + "/workflow.ga", 'w') as gafile:
+        json_ga = json.loads(gacont)
+        for i, dummyj in json_ga.items():
+            if i == 'name':
+                json_ga[i] = 'TEMP_WORKFLOW'
+        json.dump(json_ga, gafile, indent=2)
+    if workflowid != "0":
+        gi.workflows.import_workflow_from_local_path(gafile.name)
+        workflows = gi.workflows.get_workflows(name="TEMP_WORKFLOW")
+        for workflow in workflows:
+            newworkflowid = workflow["id"]
+        datamap = dict()
+        mydict = {}
+        jsonwf = gi.workflows.export_workflow_json(newworkflowid)
+        for i in range(len(jsonwf["steps"])):
+            if jsonwf["steps"][str(i)]["name"] == "Input dataset":
+                try:
+                    label = jsonwf["steps"][str(i)]["inputs"][0]["name"]
+                except IndexError:
+                    label = jsonwf["steps"][str(i)]["label"]
+                mydict[label] = gi.workflows.get_workflow_inputs(
+                    newworkflowid, label=label)[0]
+        for k, v in mydict.items():
+            datasets = get_input_data(
+                request.session.get('galaxyemail'),
+                request.session.get('galaxypass'),
+                request.session.get('server'))[0]
+            for dname, did in datasets.items():
+                if k in dname:
+                    datamap[v] = {'src': "hda", 'id': did}
+        gi.workflows.run_workflow(
+            newworkflowid, datamap, history_id=history_id)
+        gi.workflows.delete_workflow(newworkflowid)
+        call(["rm", gafile.name])
+
+
+def rerun_owncloud(request, gi, urls, ftp, history_id):
+    """Gets the data from a owncloud/nextcloud location to 
+    rerun an analysis.
+
+    Arguments:
+        request -- Request information from the rerun_analysis function.
+        gi {GalaxyInstance} -- Galaxy Instance of the current user.
+        urls {list} -- List of input file URLs
+        ftp {str} -- The FTP URL to upload data to the Galaxy server.
+        history_id {str} -- The Galaxy history ID to upload data to.
+    
+    Returns:
+        TextIOWrapper -- The Galaxy workflow file.
+    """
     uploaded_files = []
-    urls = request.POST.get('urls')
-    urls = urls.split(',')
-    urls = sorted(urls)
-    gi.histories.create_history(name=resultid)
-    history_id = get_history_id(request.session.get('galaxyemail'),
-                                request.session.get('galaxypass'),
-                                request.session.get('server'))
-    for u in urls:
-        filename = u.replace("[", "").replace("]", "").replace(
-            " ", "").replace('"', '')
+    for url in urls:
         cont = subprocess.Popen([
             "curl -s -u " + request.session.get('username') + ":" +
             request.session.get('password') + " " +
-            request.session.get('storage') + "/" + filename
+            request.session.get('storage') + "/" + url
         ], stdout=subprocess.PIPE, shell=True).communicate()[0].decode()
-        file = filename.split('/')
-        with open(request.session.get('username') + "/" +
-                  file[len(file)-1], "w") as infile:
+        filename = url.split('/')
+        with open(
+            request.session.get('username') + "/" +
+            filename[len(filename)-1], "w"
+        ) as infile:
             infile.write(cont)
         check_call([
-            "lftp -u " + galaxyemail + ":" + galaxypass + " " + ftp +
+            "lftp -u " + request.session.get('galaxyemail') + ":" + 
+            request.session.get('galaxypass') + " " + ftp +
             " -e \"put " + infile.name + "; bye\""], shell=True)
-        gi.tools.upload_from_ftp(infile.name.split("/")[-1],
-                                 history_id,
-                                 file_type="auto", 
-                                 dbkey="?")
+        gi.tools.upload_from_ftp(
+            infile.name.split("/")[-1],
+            history_id,
+            file_type="auto",
+            dbkey="?"
+        )
         uploaded_files.append(infile.name.split("/")[-1])
         call(["rm", infile.name])
     hist = gi.histories.show_history(history_id)
@@ -2915,15 +3071,22 @@ def rerun_analysis(request):
                 not status['upload']
         ):
             for uf in uploaded_files:
-                check_call([
-                    "lftp -u " + galaxyemail + ":" + galaxypass + " " + ftp +
-                    " -e \"rm -r " + uf + "; bye\""
-                ], shell=True)
+                try:
+                    check_call([
+                        "lftp -u " + request.session.get('galaxyemail') + ":" +
+                        request.session.get('galaxypass') + " " + ftp +
+                        " -e \"rm -r " + uf + "; bye\""
+                    ], shell=True)
+                except subprocess.CalledProcessError:
+                    pass
             break
+    folderurl = ""
+    for i in range(len(filename)-1):
+        folderurl += (filename[i] + "/")
     oc_folders = subprocess.Popen([
         "curl -s -X PROPFIND -u " + request.session.get('username') + ":" +
         request.session.get('password') + " '" +
-        request.session.get('storage') + "/" + resultid +
+        request.session.get('storage') + "/" + folderurl +
         "' | grep -oPm250 '(?<=<d:href>)[^<]+'"
     ], stdout=subprocess.PIPE, shell=True
     ).communicate()[0].decode().split("\n")
@@ -2941,42 +3104,120 @@ def rerun_analysis(request):
             ga = ga.split('/')
             with open(request.session.get('username') + "/" +
                       ga[len(ga)-1], "w") as gafile:
-                gafile.write(gacont)
-    time.sleep(30)
-    if workflowid != "0":
-        gi.workflows.import_workflow_from_local_path(gafile.name)
-        workflows = gi.workflows.get_workflows(published=False)
-        jwf = json.loads(gacont)
-        datamap = dict()
-        mydict = {}
-        for workflow in workflows:
-            if "API" in workflow["name"]:
-                newworkflowid = workflow["id"]
-                jsonwf = gi.workflows.export_workflow_json(newworkflowid)
-            elif jwf["name"] in workflow["name"]:
-                newworkflowid = workflow["id"]
-                jsonwf = gi.workflows.export_workflow_json(newworkflowid)
-        for i in range(len(jsonwf["steps"])):
-            if jsonwf["steps"][str(i)]["name"] == "Input dataset":
-                try:
-                    label = jsonwf["steps"][str(i)]["inputs"][0]["name"]
-                except IndexError:
-                    label = jsonwf["steps"][str(i)]["label"]
-                mydict["in%s" % (str(i+1))] = gi.workflows.get_workflow_inputs(
-                    newworkflowid, label=label
-                )[0]
-        in_count = 1
-        for dummyk, v in mydict.items():
-            datamap[v] = {'src': "hda",
-                          'id': get_input_data(
-                              request.session.get('galaxyemail'),
-                              request.session.get('galaxypass'),
-                              request.session.get('server'))[0][in_count]}
-            in_count -= 1
-        gi.workflows.invoke_workflow(
-            newworkflowid, datamap, history_id=history_id)
-        gi.workflows.delete_workflow(newworkflowid)
-        call(["rm", gafile.name])
+                json_ga = json.loads(gacont)
+                for i, dummyj in json_ga.items():
+                    if i == 'name':
+                        json_ga[i] = 'TEMP_WORKFLOW'
+                json.dump(json_ga, gafile, indent=2)
+    return gafile
+
+
+def rerun_owncloud_workflow(request, gi, gafile, history_id):
+    """Start a Galaxy workflow when using owncloud/nextcloud as a 
+    storage location when rerunning a previous analysis.
+    
+    Arguments:
+        gi {GalaxyInstance} -- Galaxy Instance of the current logged in user.
+        gafile {TextIOWrapper} -- The Galaxy workflow file to import into 
+        the Galaxy server
+    """
+    gi.workflows.import_workflow_from_local_path(gafile.name)
+    workflows = gi.workflows.get_workflows(name="TEMP_WORKFLOW")
+    for workflow in workflows:
+        newworkflowid = workflow["id"]
+    datamap = dict()
+    mydict = {}
+    jsonwf = gi.workflows.export_workflow_json(newworkflowid)
+    for i in range(len(jsonwf["steps"])):
+        if jsonwf["steps"][str(i)]["name"] == "Input dataset":
+            try:
+                label = jsonwf["steps"][str(i)]["inputs"][0]["name"]
+            except IndexError:
+                label = jsonwf["steps"][str(i)]["label"]
+            mydict[label] = gi.workflows.get_workflow_inputs(
+                newworkflowid, label=label)[0]
+    for k, v in mydict.items():
+        datasets = get_input_data(
+            request.session.get('galaxyemail'),
+            request.session.get('galaxypass'),
+            request.session.get('server')
+        )[0]
+        for dname, did in datasets.items():
+            if k in dname:
+                datamap[v] = {'src': "hda", 'id': did}
+    gi.workflows.run_workflow(
+        newworkflowid,
+        datamap,
+        history_id=history_id
+    )
+    gi.workflows.delete_workflow(newworkflowid)
+    call(["rm", gafile.name])
+
+
+@csrf_exempt
+def rerun_analysis(request):
+    """Rerun an analysis stored in the triple store.
+    Search for a result on the homepage and view the results.
+    In the resultspage there is an option to rerun the analysis.
+
+    Arguments:
+        request -- A request to receive information to rerun previously
+        generated results.
+    """
+    workflowid = request.POST.get('workflowid')
+    workflowid = workflowid.replace('"', '')
+    urls = request.POST.get('urls')
+    urls = urls.replace('"', '').replace("[", "").replace("]", "")
+    urls = urls.split(',')
+    urls = sorted(urls)
+    gi = GalaxyInstance(
+        url=request.session.get('server'),
+        email=request.session.get('galaxyemail'),
+        password=request.session.get("galaxypass")
+    )
+    ftp = gi.config.get_config()["ftp_upload_site"]
+    if "bioinf-galaxian" in ftp:
+        ftp = "ftp://bioinf-galaxian.erasmusmc.nl:23"
+    gi.histories.create_history(name=request.POST.get('resultid'))
+    history_id = get_history_id(
+        request.session.get('galaxyemail'),
+        request.session.get('galaxypass'),
+        request.session.get('server')
+    )
+    if request.session.get('storage_type') == "SEEK":
+        gacont = rerun_seek(
+            gi,
+            request.session.get('storage'),
+            request.POST.get('resultid'),
+            request.session.get("galaxyemail"),
+            request.session.get("galaxypass"),
+            ftp,
+            request.session.get('username'),
+            history_id
+        )
+        if workflowid != "0":
+            rerun_seek_workflow(
+                request,
+                gi,
+                workflowid,
+                history_id,
+                gacont
+            )
+    else:
+        gafile = rerun_owncloud(
+            request,
+            gi,
+            urls,
+            ftp,
+            history_id
+        )
+        if workflowid != "0":
+            rerun_owncloud_workflow(
+                request,
+                gi,
+                gafile,
+                history_id
+            )
     return HttpResponseRedirect(reverse("index"))
 
 
