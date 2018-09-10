@@ -45,10 +45,13 @@ def login(request):
         galaxypass = request.POST.get("galaxypass")
         galaxyemail = request.POST.get("galaxyemail")
         noexpire = request.POST.get('no-expire')
-        seekserver = request.POST.get('isseek')
         if storage != "":
             request.session['storage'] = storage
-            if seekserver == "yes":
+            storage_command = ("curl -s " + storage)
+            storage_call = subprocess.Popen(
+                [storage_command], stdout=subprocess.PIPE, shell=True
+            ).communicate()[0].decode()
+            if "seek4science" in storage_call or "fair-dom" in storage_call:
                 request.session['storage_type'] = "SEEK"
             else:
                 request.session['storage_type'] = "nextcloud"
@@ -128,14 +131,23 @@ def index(request):
             storage = request.POST.get('storage')
             server = request.POST.get('server')
             oc_folders, inv_folders = get_study_folders(
-                storage, username, password, investigation)
+                storage,
+                request.session.get('storage_type'),
+                username,
+                password,
+                investigation
+            )
         else:
             username = request.session.get('username')
             password = request.session.get('password')
             storage = request.session.get('storage')
             server = request.session.get('server')
             inv_folders, oc_folders = get_investigation_folders(
-                storage, username, password)
+                storage,
+                request.session.get('storage_type'),
+                username,
+                password
+            )
         for inv in inv_folders:
             if "/owncloud/" in request.session.get('storage'):
                 investigation_name = inv.replace(
@@ -143,7 +155,7 @@ def index(request):
                 if "." not in investigation_name:
                     new = investigation_name
                     investigations.append(new)
-            elif "seek" in storage:
+            elif request.session.get('storage_type') == "SEEK":
                 investigations = get_seek_investigations(
                     username, password, storage)
             else:
@@ -160,7 +172,7 @@ def index(request):
                 if "." not in study:
                     new = study
                     folders.append(new)
-            elif "seek" in storage:
+            elif request.session.get('storage_type') == "SEEK":
                 folders.append(oc)
             else:
                 study = oc.replace(
@@ -176,29 +188,31 @@ def index(request):
                 gusername, workflows, his, dbkeys = get_galaxy_info(
                     request.POST.get('server'),
                     request.POST.get('galaxyemail'),
-                    request.POST.get("galaxypass"))
+                    request.POST.get("galaxypass")
+                )
             else:
                 gusername, workflows, his, dbkeys = get_galaxy_info(
                     request.session.get('server'),
                     request.session.get('galaxyemail'),
-                    request.session.get("galaxypass"))
+                    request.session.get("galaxypass")
+                )
         except Exception:
             request.session.flush()
             return render_to_response('login.html', context={
                 'error': 'Credentials incorrect. Please try again'})
-        return render(request, 'home.html',
-                      context={'workflows': workflows, 'histories': his,
-                               'user': gusername, 'username': username,
-                               'password': password, 'server': server,
-                               'storage': storage,
-                               'storagetype': request.session.get('storage_type'),
-                               'investigations': investigations,
-                               'studies': folders, 'inv': investigation,
-                               'dbkeys': dbkeys,
-                               'galaxyemail': request.session.get(
-                                   'galaxyemail'),
-                               'galaxypass': request.session.get(
-                                   'galaxypass')})
+        return render(
+            request, 'home.html',
+            context={'workflows': workflows, 'histories': his,
+                     'user': gusername, 'username': username,
+                     'password': password, 'server': server,
+                     'storage': storage,
+                     'storagetype': request.session.get('storage_type'),
+                     'investigations': investigations,
+                     'studies': folders, 'inv': investigation,
+                     'dbkeys': dbkeys,
+                     'galaxyemail': request.session.get('galaxyemail'),
+                     'galaxypass': request.session.get('galaxypass')}
+        )
 
 
 @csrf_exempt
@@ -573,25 +587,28 @@ def seek(request):
                 request.POST.get('description')
             )
             call(["rm", "-r", upload_full_path])
-    return render(request, "seek.html", context={'projects': projects,
-                                                 'investigations': inv_names,
-                                                 'studies': study_names,
-                                                 'assays': assay_names,
-                                                 'userids': user_dict,
-                                                 'proj': selected_project,
-                                                 'proj_name': selected_project_name,
-                                                 'inv': selected_investigation,
-                                                 'inv_name': selected_investigation_name,
-                                                 'stu': selected_study,
-                                                 'stu_name': selected_study_name,
-                                                 'as': selected_assay,
-                                                 'as_name': selected_assay_name,
-                                                 'cns': cns,
-                                                 'cna': cna,
-                                                 'searches': searches})
+    return render(
+        request,
+        "seek.html",
+        context={'projects': projects,
+                 'investigations': inv_names,
+                 'studies': study_names,
+                 'assays': assay_names,
+                 'userids': user_dict,
+                 'proj': selected_project,
+                 'proj_name': selected_project_name,
+                 'inv': selected_investigation,
+                 'inv_name': selected_investigation_name,
+                 'stu': selected_study,
+                 'stu_name': selected_study_name,
+                 'as': selected_assay,
+                 'as_name': selected_assay_name,
+                 'cns': cns,
+                 'cna': cna,
+                 'searches': searches})
 
 
-def get_investigation_folders(storage, username, password):
+def get_investigation_folders(storage, storagetype, username, password):
     """Gets the user's investigation folders from the storage URL,
     This will be shown on the homepage for storing existing Galaxy 
     histories.
@@ -606,7 +623,7 @@ def get_investigation_folders(storage, username, password):
         list -- List of study folders.
     """
     oc_folders = ""
-    if "seek" not in storage:
+    if storagetype != "SEEK":
         inv_folders = subprocess.Popen([
             "curl -s -X PROPFIND -u" + username + ":" + password +
             " '" + storage + "/' | grep -oPm250 '(?<=<d:href>)[^<]+'"
@@ -616,18 +633,19 @@ def get_investigation_folders(storage, username, password):
         inv_folders = []
         seek_investigations = get_seek_investigations(
             username, password, storage)
-        for it, ii in seek_investigations.items():
+        for it, dummyii in seek_investigations.items():
             inv_folders.append(it)
-            get_seek_studies(username, password, storage, ii)
+            get_seek_studies(username, password, storage, it)
     return inv_folders, oc_folders
 
 
-def get_study_folders(storage, username, password, investigation):
+def get_study_folders(storage, storagetype, username, password, investigation):
     """Gets the study folders based on the selected investigation from the
     homepage. This is used to store existing Galaxt histories.
 
     Arguments:
         storage {str} -- The URL of the ISA structure storage.
+        storagetype {str} -- To show if the storage is SEEK or ownCloud.
         username {str} -- The username of the ISA structure storage.
         password {str} -- The password of the ISA structure storage.
         investigation {str} -- Investigation ID
@@ -636,7 +654,7 @@ def get_study_folders(storage, username, password, investigation):
         list -- List of study folders
         list -- List of investigation folders
     """
-    if "seek" not in storage:
+    if storagetype != "SEEK":
         oc_folders = subprocess.Popen([
             "curl -s -X PROPFIND -u " + username + ":" + password +
             " '" + storage + "/" + investigation +
@@ -656,7 +674,7 @@ def get_study_folders(storage, username, password, investigation):
         for it, dummyii in seek_inv.items():
             inv_folders.append(it)
         seek_study = get_seek_studies(
-            username, password, storage, investigation)
+            username, password, storage, it)
         oc_folders = []
         for st, dummysi in seek_study.items():
             oc_folders.append(st)
@@ -703,6 +721,8 @@ def get_galaxy_info(url, email, password):
 def get_seek_investigations(username, password, storage):
     """Get all SEEK investigations that the logged in user has access to.
 
+    TODO: Implement the SEEK API to get the investigations for the homepage.
+
     Arguments:
         username {str} -- The SEEK username.
         password {str} -- The SEEK password.
@@ -732,39 +752,55 @@ def get_seek_investigations(username, password, storage):
 def get_seek_studies(username, password, storage, investigation):
     """Get all SEEK studies based on an investigation.
 
+    TODO: Implement SEEK API to get the studies for the homepage.
+
     Arguments:
         username {str} -- The SEEK username.
         password {str} -- The SEEK password.
         storage {str} -- The SEEK URL.
-        investigation {str} -- Investigation ID
+        investigation_title {str} -- Investigation name
 
     Returns:
         dict -- Dictionary with studies and URLs.
     """
     studies = {}
-    investigation_id = investigation.split("/")[-1]
-    study_titles = subprocess.Popen([
-        "curl -s -u \'" + username + "\':" + password + " " + storage +
-        "/investigations/" + investigation_id +
-        ".xml | grep -e \'study xlink\' | "
-        "sed -n \'s/.*title=\"\\([^\"]*\\).*/\\1/p\'"
-    ], stdout=subprocess.PIPE, shell=True).communicate()[0].decode()
-    study_titles = study_titles.split("\n")
-    study_titles = list(filter(None, study_titles))
-    for st in study_titles:
-        study_id = subprocess.Popen([
-            "curl -s -u \'" + username + "\':" + password +
-            " " + storage + "/investigations/" + investigation_id +
-            ".xml | grep -e \'" + st +
-            "\' | sed -n \'s/.*href=\"\\([^\"]*\\).*/\\1/p\'"
-        ], stdout=subprocess.PIPE, shell=True).communicate()[0].decode()
-        if study_id is not None or study_id != '':
-            studies[st] = study_id.strip("\n")
+    investigation_title = investigation.split("/")[-1]
+    investigation_command = ("curl -X GET " + storage +
+                            "/investigations/ -H \"accept: application/json\"")
+    investigation_result = subprocess.Popen(
+        [investigation_command],
+        stdout=subprocess.PIPE, shell=True
+    ).communicate()[0].decode()
+    json_investigation = json.loads(investigation_result)
+    for x in range(0, len(json_investigation["data"])):
+        if json_investigation["data"][x]["attributes"]["title"] == investigation_title.strip("\n"):
+            investigation_id = json_investigation["data"][x]["id"]
+    study_link_command = ("curl -X GET " + storage + "/investigations/" +
+                    investigation_id + " -H \"accept: application/json\"")
+    study_link = subprocess.Popen(
+        [study_link_command], stdout=subprocess.PIPE, shell=True
+        ).communicate()[0].decode()
+    json_study_link = json.loads(study_link)
+    study_count = len(
+        json_study_link["data"]["relationships"]["studies"]["data"])
+    for i in range(study_count):
+        study_id = json_study_link["data"]["relationships"]["studies"]["data"][i]["id"]
+        study_command = ("curl -X GET " + storage + "/studies/" +
+                    study_id + " -H \"accept: application/json\"")
+        study_results=subprocess.Popen(
+            [study_command],
+            stdout=subprocess.PIPE, shell=True
+        ).communicate()[0].decode()
+        json_study = json.loads(study_results)
+        study_title = json_study["data"]["attributes"]["title"]
+        studies[study_title] = study_id
     return studies
 
 
 def get_seek_assays(username, password, storage, study):
     """Gets the SEEK assays based on a study.
+
+    TODO: Implement the SEEK API to get the assays.
 
     Arguments:
         username {str} -- The SEEK username.
@@ -863,7 +899,7 @@ def triples(request):
         folders = []
         studies = []
         inv = request.POST.get('inv')
-        if "seek" in request.session.get("storage"):
+        if request.session.get('storage_type') == "SEEK":
             oc_folders = []
             inv_names = get_seek_investigations(
                 request.session.get('username'),
@@ -886,7 +922,7 @@ def triples(request):
                     new = oc.replace(
                         '/owncloud/remote.php/webdav/', '').replace('/', '')
                     folders.append(new)
-                elif "seek" in request.session.get("storage"):
+                elif request.session.get('storage_type') == "SEEK":
                     folders.append(oc)
                 else:
                     new = oc.replace(
@@ -908,7 +944,7 @@ def triples(request):
                     request.POST.get('study') is not None
                 ):
                     study = request.POST.get('study')
-                    if "seek" not in request.session.get('storage'):
+                    if request.session.get('storage_type') != "SEEK":
                         filelist = subprocess.Popen([
                             "curl -s -X PROPFIND -u " +
                             request.session.get('username') + ":" +
@@ -932,7 +968,7 @@ def triples(request):
                             '/owncloud/remote.php/webdav/' +
                             inv + "/" + study, '').replace('/', '')
                         files.append(new)
-                    elif "seek" in request.session.get('storage'):
+                    elif request.session.get('storage_type') == "SEEK":
                         files.append(f)
                     else:
                         new = f.replace(
@@ -1020,7 +1056,7 @@ def investigation(request):
                         '/owncloud/remote.php/webdav/', '').replace('/', '')
                     if "." not in new:
                         folders.append(new)
-                elif "seek" in request.session.get('storage'):
+                elif request.session.get('storage_type') == "SEEK":
                     folders.append(oc)
                 else:
                     new = oc.replace(
@@ -1044,12 +1080,12 @@ def investigation(request):
                     ).communicate()[0].decode().split("\n")
                 else:
                     oc_studies = []
-                    for it, ii in inv_names.items():
+                    for it, dummyii in inv_names.items():
                         if it == request.POST.get('folder'):
                             studydict = get_seek_studies(
                                 request.session.get('username'),
                                 request.session.get('password'),
-                                request.session.get('storage'), ii)
+                                request.session.get('storage'), it)
                     for st, dummysi in studydict.items():
                         oc_studies.append(st)
             else:
@@ -1076,7 +1112,7 @@ def investigation(request):
                                 request.POST.get('folder') + "/", '').replace(
                                     '/', '')
                             studies.append(new)
-                        elif "seek" in request.session.get('storage'):
+                        elif request.session.get('storage_type') == "SEEK":
                             studies.append(s)
                         else:
                             new = s.replace(
@@ -1527,6 +1563,9 @@ def split_data_files(username, filename, control, test):
 def make_data_files(gi, files, username, password, galaxyemail, galaxypass,
                     control, test, history_id, filetype, dbkey, storagetype):
     """Create datafiles and send them to the Galaxy server.
+
+    TODO: Check if user has the correct permissions to the study.
+    TODO: Give a message to the user when there is no edit permission.
 
     Arguments:
         gi {GalaxyInstance} -- The Galaxy Instance.
@@ -2584,6 +2623,16 @@ def get_results(group, resultid, investigations, username, password, storage):
 
 
 def get_seek_result(storage, assay):
+    """Get the results based on the SEEK assay name.
+    Returns data file IDs and titles to show in the result page.
+    
+    Arguments:
+        storage {str} -- SEEK URL
+        assay {str} -- Name of the assay where the result is stored.
+    
+    Returns:
+        dict -- Dictionary with data IDs and titles.
+    """
     assay = assay.strip("[").strip("]")
     get_assays_cmd = ("curl -X GET \"" + storage +
                       "\"/assays -H \"accept: application/json\"")
@@ -2747,91 +2796,94 @@ def store_history(request):
         names = []
         resultid = uuid.uuid1()
         if request.method == 'POST':
-            historyid = request.POST.get('history')
-            inputs = []
-            input_ids = []
-            output = []
-            hist = gi.histories.show_history(historyid,
-                                             contents='all')
-            export = gi.histories.export_history(
-                historyid,
-                include_deleted=False,
-                include_hidden=True)
-            call(["touch", home + username + "/" + historyid + ".tar"])
-            f = open(home + username + "/" + historyid + ".tar", 'rb+')
-            gi.histories.download_history(
-                historyid,
-                export,
-                f)
-            shaname = sha1sum(f.name) + "_" + f.name.split('/')[-1]
-            os.rename(f.name, home + username + "/" +
-                      strftime("%d_%b_%Y_%H:%M:%S", gmtime()) + "_" + shaname)
-            url.append(strftime("%d_%b_%Y_%H:%M:%S", gmtime()) + "_" + shaname)
-            state = hist['state_ids']
-            dump = json.dumps(state)
-            status = json.loads(dump)
-            files = status['ok']
-            for o in files:
-                oug = gi.datasets.show_dataset(
-                    o, deleted=False, hda_ldda='hda')
-                if "input_" in oug['name']:
-                    if oug['visible']:
-                        url.append(server + oug['download_url'])
-                        names.append(oug['name'])
-                    inputs.append(oug['id'])
-                else:
-                    if oug['visible']:
-                        url.append(server + oug['download_url'])
-                        names.append(oug['name'])
-                    output.append(oug)
-            for i in inputs:
-                iug = gi.datasets.show_dataset(
-                    i, deleted=False, hda_ldda='hda')
-                input_ids.append(iug)
-            count = 0
-            for u in url:
-                if server in u:
-                    cont = subprocess.Popen([
-                        "curl -s -k " + u
-                    ], stdout=subprocess.PIPE, shell=True
-                    ).communicate()[0].decode()
-                    old_name = strftime(
-                        "%d_%b_%Y_%H:%M:%S", gmtime()
-                    ) + "_" + names[count].replace('/', '_').replace(' ', '_')
-                    with open(username + "/" + old_name, "w") as newfile:
-                        newfile.write(cont)
-                    new_name = sha1sum(newfile.name) + "_" + old_name
-                    os.rename(username + "/" + old_name, username +
-                              "/" + new_name)
-                    count += 1
-                else:
-                    new_name = u
-                for g in groups.split(','):
-                    pid = (storage + "/" + g.replace('"', '') +
-                           "/results_" + str(resultid) + "/" + new_name)
-                    call([
-                        "curl -s -k -u " + username + ":" + password +
-                        " -X MKCOL " + storage + "/" + investigation + "/" +
-                        g.replace('"', '') + "/results_" + str(resultid)
-                    ], shell=True)
-                    call([
-                        "curl -s -k -u " + username + ":" + password + " -T " +
-                        '\'' + username + "/" + new_name + '\'' + " " +
-                        storage + "/" + investigation + "/" +
-                        g.replace('"', '') + "/results_" + str(resultid) +
-                        "/" + new_name
-                    ], shell=True)
-                    call([
-                        "bash ~/myFAIR/static/bash/triples_history.sh "
-                        "-t1 -u " + username.replace('@', '') + " -r " +
-                        str(resultid) + " -p " + pid + " -s " +
-                        g.replace('"', '') + " -i " + investigation + " -d " +
-                        date + " -w " + hist["name"] + " -e 0 -g " +
-                        str(historyid)
-                    ], shell=True, stdout=subprocess.PIPE)
-                call(["rm", username + "/" + new_name])
-            call(["rm", home + username + "/" + shaname])
-            return HttpResponseRedirect(reverse('index'))
+            if request.session.get('storagetype') == "SEEK":
+                pass
+            else:
+                historyid = request.POST.get('history')
+                inputs = []
+                input_ids = []
+                output = []
+                hist = gi.histories.show_history(historyid,
+                                                contents='all')
+                export = gi.histories.export_history(
+                    historyid,
+                    include_deleted=False,
+                    include_hidden=True)
+                call(["touch", home + username + "/" + historyid + ".tar"])
+                f = open(home + username + "/" + historyid + ".tar", 'rb+')
+                gi.histories.download_history(
+                    historyid,
+                    export,
+                    f)
+                shaname = sha1sum(f.name) + "_" + f.name.split('/')[-1]
+                os.rename(f.name, home + username + "/" +
+                        strftime("%d_%b_%Y_%H:%M:%S", gmtime()) + "_" + shaname)
+                url.append(strftime("%d_%b_%Y_%H:%M:%S", gmtime()) + "_" + shaname)
+                state = hist['state_ids']
+                dump = json.dumps(state)
+                status = json.loads(dump)
+                files = status['ok']
+                for o in files:
+                    oug = gi.datasets.show_dataset(
+                        o, deleted=False, hda_ldda='hda')
+                    if "input_" in oug['name']:
+                        if oug['visible']:
+                            url.append(server + oug['download_url'])
+                            names.append(oug['name'])
+                        inputs.append(oug['id'])
+                    else:
+                        if oug['visible']:
+                            url.append(server + oug['download_url'])
+                            names.append(oug['name'])
+                        output.append(oug)
+                for i in inputs:
+                    iug = gi.datasets.show_dataset(
+                        i, deleted=False, hda_ldda='hda')
+                    input_ids.append(iug)
+                count = 0
+                for u in url:
+                    if server in u:
+                        cont = subprocess.Popen([
+                            "curl -s -k " + u
+                        ], stdout=subprocess.PIPE, shell=True
+                        ).communicate()[0].decode()
+                        old_name = strftime(
+                            "%d_%b_%Y_%H:%M:%S", gmtime()
+                        ) + "_" + names[count].replace('/', '_').replace(' ', '_')
+                        with open(username + "/" + old_name, "w") as newfile:
+                            newfile.write(cont)
+                        new_name = sha1sum(newfile.name) + "_" + old_name
+                        os.rename(username + "/" + old_name, username +
+                                "/" + new_name)
+                        count += 1
+                    else:
+                        new_name = u
+                    for g in groups.split(','):
+                        pid = (storage + "/" + g.replace('"', '') +
+                            "/results_" + str(resultid) + "/" + new_name)
+                        call([
+                            "curl -s -k -u " + username + ":" + password +
+                            " -X MKCOL " + storage + "/" + investigation + "/" +
+                            g.replace('"', '') + "/results_" + str(resultid)
+                        ], shell=True)
+                        call([
+                            "curl -s -k -u " + username + ":" + password + " -T " +
+                            '\'' + username + "/" + new_name + '\'' + " " +
+                            storage + "/" + investigation + "/" +
+                            g.replace('"', '') + "/results_" + str(resultid) +
+                            "/" + new_name
+                        ], shell=True)
+                        call([
+                            "bash ~/myFAIR/static/bash/triples_history.sh "
+                            "-t1 -u " + username.replace('@', '') + " -r " +
+                            str(resultid) + " -p " + pid + " -s " +
+                            g.replace('"', '') + " -i " + investigation + " -d " +
+                            date + " -w " + hist["name"] + " -e 0 -g " +
+                            str(historyid)
+                        ], shell=True, stdout=subprocess.PIPE)
+                    call(["rm", username + "/" + new_name])
+                call(["rm", home + username + "/" + shaname])
+                return HttpResponseRedirect(reverse('index'))
 
 
 def read_workflow(filename):
