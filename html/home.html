@@ -164,7 +164,8 @@ function getStudies(){
 {% block contentwork %}
 <br />
 <br />
-<div class="container">
+{% if storagetype != "SEEK" %}
+<div class="container" id="storeownloud">
     <div class="row">
         <div class="col-lg-12">
             <div class="page-header text-center">
@@ -249,7 +250,6 @@ function getStudies(){
                             </td>
                         </tr>
                         <tr>
-                            <!-- <td style="width: 0px"></td> -->
                             <td>
                                 <button id="index_buttons" style="width: 100%" onclick="showHisLoading()">Send history to Owncloud</button>
                             </td>
@@ -263,6 +263,7 @@ function getStudies(){
 <div id="historydiv" name="historydiv" style="text-align: center; display: none;">
     <img id="loadingImage" src="{% static 'img/loading.gif' %}" width="25%" height="25%">
 </div>
+{% endif %}
 {% endblock %}
 <br />
 <div id="footer">

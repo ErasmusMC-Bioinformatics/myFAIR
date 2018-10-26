@@ -6,11 +6,37 @@
         document.forms['seek-data-upload'].submit()
     }
     function UploadSeek() {
+        document.getElementById('loading').style.display = "block";
         document.forms['seek-data-upload'].submit()
+    }
+    function Edam() {
+        var wn = document.getElementById('edam-browser').contentWindow;
+        wn.postMessage('Hello to iframe from parent!', 'http://127.0.0.1:20080/');
+        if ( window.addEventListener ) {
+            window.addEventListener('message', handleMessage, false);
+        } else if ( window.attachEvent ) { // ie8
+            window.attachEvent('onmessage', handleMessage);
+        }
+        function handleMessage(e) {
+            var el = document.getElementById('res');
+            if ( e.origin === 'http://127.0.0.1:20080') {
+                el.value = e.data;
+                document.getElementById('isselected').style.display = "block";
+                e.source.postMessage('Message received', e.origin);
+            }
+        }
+        
+        setTimeout(seekCreate, 2000);
     }
     function seekCreate()
     {
+        document.getElementById('loading').style.display = "block";
         document.forms['seek-data-upload'].submit()
+    }
+    function AddEdam() {
+        var e = document.getElementById("edamresult");
+        var eselect = e.options[e.selectedIndex].value;
+        document.getElementById('hiddenedam').innerHTML = eselect;
     }
 </script>
 {% endblock %}
@@ -28,31 +54,26 @@
         </div>
     </div>
 </div>
-<div class="container" style="margin-top:100px">
+<div class="container" style="margin-top:100px;">
+    {% if err %}
+        {{err}}
+    {% endif %}
     <form action="{% url 'seek' %}" method="POST" name="seek-data-upload" enctype=multipart/form-data >
-        <table id="tbl-files">
+        <table id="tbl-files" width="100%" style="margin-bottom:150px;">
             <thead>
-                <th></th>
-                <th></th>
-                <th></th>
-                <th></th>
-                <th></th>
+                <th style="text-align:center;">SEEK Upload Form</th>
             </thead>
             <tr>
-                <td><b><i>Select a user</i></b></td>
                 <td>
-                    <select id="user" name="user" class="select-folder" onchange="seekCreate()">
-                        <optgroup label="available users:">
-                            {% for uid, uname in userids.items %}
-                                <option value="{{ uid }}">{{ uname }}</option>
-                            {% endfor %}
-                        </optgroup>
-                    </select>
+                    <b><i>Enter you first name and last name: </i></b>
+                    <br>
+                    <input type="text" id="user" name="user" value="{{fullname}}">
                 </td>
             </tr>
             <tr>
-                <td><b><i>Select a project</i></b></td>
                 <td>
+                    <b><i>Select a project</i></b>
+                    <br>
                     <input type="hidden" id="proj" name="proj" value="{{proj|add:","|add:proj_name}}">
                     <select id="projects" name="projects" class="select-folder" onchange="seekCreate()">
                         <optgroup label="available projects:">
@@ -63,14 +84,12 @@
                         </optgroup>
                     </select>
                 </td>
-                <td>&nbsp;</td>
-                <td>&nbsp;</td>
-                <td>&nbsp;</td>
             </tr>
             {% if investigations %}
             <tr>
-                <td><b><i>Select an investigation</i></b></td>
                 <td>
+                    <b><i>Select an investigation: </i></b>
+                    <br>
                     <input type="hidden" id="inv" name="inv" value="{{inv|add:","|add:inv_name}}">
                     <select id="investigations" name="investigations" class="select-folder" onchange="seekCreate()">
                         <optgroup label="available investiagtions:">
@@ -81,15 +100,13 @@
                         </optgroup>
                     </select>
                 </td>
-                <td>&nbsp;</td>
-                <td>&nbsp;</td>
-                <td>&nbsp;</td>
             </tr>
             {% endif %}
             {% if studies %}
             <tr>
-                <td><b><i>Select a study</i></b></td>
                 <td>
+                    <b><i>Select a study: </i></b>
+                    <br>
                     <input type="hidden" id="stu" name="stu" value="{{stu|add:","|add:stu_name}}">
                     <select id="studies" name="studies" class="select-folder" onchange="seekCreate()">
                         <option id="stu" disabled selected value="{{ stu }}">{{ stu_name }}</option>
@@ -99,8 +116,6 @@
                             {% endfor %}
                         </optgroup>
                     </select>
-                </td>
-                <td>
                     {% if cns == "yes" or assays or as %}
                         &nbsp;
                     {% else %}
@@ -108,53 +123,43 @@
                         <label for="cns">create new study?</label>    
                     {% endif %}
                 </td>
-                <td>&nbsp;</td>
-                <td>&nbsp;</td>
             </tr>
             {% if not stu and cns == "yes" %}
             <tr>
                 <td>&nbsp;</td>
-                <td>&nbsp;</td>
-                <td>&nbsp;</td>
             </tr>
             <tr>
                 <td style="color: #21317F"><b><i>CREATE A NEW STUDY</i></b></td>
-                <td>&nbsp;</td>
-                <td>&nbsp;</td>
-                <td>&nbsp;</td>
             </tr>
             <tr>
-                <td><b><i>Enter a new study name</i></b></td>
                 <td>
+                    <b><i>Enter a new study name: </i></b>
+                    <br>
                     <input type="text" id="newstudy" name="newstudy" />
                 </td>
             </tr>
             <tr>
-                <td><b><i>Enter a title</i></b></td>
-                <td><input type="text" id="stitle" name="stitle" /></td>
-                <td>&nbsp;</td>
-                <td>&nbsp;</td>
-                <td>&nbsp;</td>
+                <td>
+                    <b><i>Enter a title: </i></b>
+                    <input type="text" id="stitle" name="stitle" />
+                </td>
             </tr>
             <tr>
-                <td><b><i>Enter a description</i></b></td>
-                <td><textarea id="sdescription" name="sdescription"></textarea></td>
-                <td>&nbsp;</td>
-                <td>&nbsp;</td>
+                <td>
+                    <b><i>Enter a description</i></b>
+                    <textarea id="sdescription" name="sdescription"></textarea>
+                </td>
             </tr>
             <tr>
                 <td><button id="index_buttons" onclick="seekCreate()">Create new study</button></td>
-                <td>&nbsp;</td>
-                <td>&nbsp;</td>
-                <td>&nbsp;</td>
-                <td>&nbsp;</td>
             </tr>
             {% endif %}
             {% endif %}
             {% if assays %}
             <tr>
-                <td><b><i>Select an assay</i></b></td>
                 <td>
+                    <b><i>Select an assay</i></b>
+                    <br>
                     <input type="hidden" id="as" name="as" value="{{as|add:","|add:as_name}}">
                     <select id="assays" name="assays" class="select-folder" onchange="seekCreate()">
                         <optgroup label="available assays:">
@@ -164,8 +169,6 @@
                             {% endfor %}
                         </optgroup>
                     </select>
-                </td>
-                <td>
                     {% if cna == "yes" or as %}
                         &nbsp;
                     {% else %}
@@ -173,41 +176,37 @@
                         <label for="cna">create new assay?</label>    
                     {% endif %}
                 </td>
-                <td>&nbsp;</td>
-                <td>&nbsp;</td>
             </tr>
             {% endif %}
             {% if stu and not assays or cna == "yes" %}
             <tr>
                 <td>&nbsp;</td>
-                <td>&nbsp;</td>
-                <td>&nbsp;</td>
-                <td>&nbsp;</td>
-                <td>&nbsp;</td>
             </tr>
             <tr>
                 <td style="color: #21317F"><b><i>CREATE A NEW ASSAY</i></b></td>
-                <td>&nbsp;</td>
-                <td>&nbsp;</td>
-                <td>&nbsp;</td>
             </tr>
             <tr>
-                <td><b><i>Enter a new assay name</i></b></td>
                 <td>
+                    <b><i>Enter a new assay name: </i></b>
                     <input type="text" id="newassay" name="newassay" />
                 </td>
             </tr>
             <tr>
-                <td><b><i>Enter a title</i></b></td>
-                <td><input type="text" id="atitle" name="atitle" /></td>
-            </tr>
-            <tr>
-                <td><b><i>Enter a description</i></b></td>
-                <td><textarea id="adescription" name="adescription"></textarea></td>
-            </tr>
-            <tr>
-                <td><b><i>Select assay type</i></b></td>
                 <td>
+                    <b><i>Enter a title: </i></b>
+                    <input type="text" id="atitle" name="atitle" />
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <b><i>Enter a description: </i></b>
+                    <textarea id="adescription" name="adescription"></textarea>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <b><i>Select assay type</i></b>
+                    <br>
                     <select id="assay_type" name="assay_type" class="select-folder">
                         <option value="http://jermontology.org/ontology/JERMOntology#Experimental_assay_type">Experimental Assay Type</option>
                         <option value="http://jermontology.org/ontology/JERMOntology#Fluxomics">--Fluxomics</option>
@@ -270,9 +269,9 @@
                         <option value="http://jermontology.org/ontology/JERMOntology#Tiling_path">----Tiling Path</option>
                         <option value="http://jermontology.org/ontology/JERMOntology#Transcriptional_analysis">----Transcriptional Analysis</option>
                     </select>
-                </td>
-                <td><b><i>Select technology type</i></b></td>
-                <td>
+                    <br>
+                    <b><i>Select technology type</i></b>
+                    <br>
                     <select id="technology_type" name="technology_type" class="select-folder">
                         <option value="http://jermontology.org/ontology/JERMOntology#Technology_type">Technology Type</option>
                         <option value="http://jermontology.org/ontology/JERMOntology#Binding">--Binding</option>
@@ -347,43 +346,111 @@
                         <option value="http://jermontology.org/ontology/JERMOntology#NMR">----NMR</option>
                     </select>
                 </td>
-                <td>&nbsp;</td>
-                <!-- <td><button id="index_buttons" onclick="seekCreate()">+</button></td> -->
             </tr>
             <tr>
-                <td><button id="index_buttons" onclick="seekCreate()">Create new assay</button></td>
-                <td>&nbsp;</td>
-                <td>&nbsp;</td>
-                <td>&nbsp;</td>
-                <td>&nbsp;</td>
+                <td>
+                    <button id="index_buttons" onclick="seekCreate()">Create new assay</button>
+                </td>
             </tr>
             {% endif %}
             {% if as and assays %}
             <tr>
+                <td style="text-align:center;">
+                    <hr>
+                    <hr>
+                    <hr>
+                </td>
+            </tr>
+            <tr>
                 <td><b><i>UPLOAD DATA FILE:</i></b></td>
             </tr>
             <tr>
-                <td><b><i>Enter a title</i></b></td>
-                <td><input type="text" id="title" name="title" /></td>
+                <td>
+                    <b><i>Enter a title: </i></b>
+                    <input type="text" id="title" name="title" />
+                </td>
             </tr>
             <tr>
-                <td><b><i>Enter a description</i></b></td>
-                <td><textarea id="description" name="description"></textarea></td>
+                <td>
+                    <b><i>Enter a description: </i></b>
+                    <textarea id="description" name="description"></textarea>
+                </td>
             </tr>
             <tr>
-                <td><b><i>Select file to upload</i></b></td>
-                <td><input type="file" id="uploadfiles" name="uploadfiles" multiple="multiple" /></td>
+                <td>
+                    <b><i>Select file to upload: </i></b>
+                    <input type="file" id="uploadfiles" name="uploadfiles" multiple="multiple" />
+                </td>
             </tr>
+            <tr>
+                <td style="text-align:center;">
+                    <hr>
+                    <hr>
+                    <hr>
+                </td>
+            </tr>
+            <tr>
+                <td><b><i>TAG ONTOLOGIES</i></b></td>
+            </tr>
+            <tr>
+                <td>
+                    Find DisGeNET tag: 
+                    <input type="text" id="disgenet" name="disgenet">
+                    <button id="index_buttons" onclick="seekCreate()">Search</button>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <select id="disgenetresult" name="disgenetresult" class="select-folder" onchange="seekCreate()">
+                        <optgroup label="available DisGeNET results:">
+                            <option value="{{storeddisgenet}}">{{storeddisgenet}}</option>
+                            {% for uri, disease in disgenet.items %}
+                                <option value="{{ uri }}">{{ disease }}</option>
+                            {% endfor %}
+                        </optgroup>
+                    </select>
+                    <input type="hidden" id="stored_disgenet" name="stored_disgenet" value="{{disgenettags}}">
+                </td>
+            </tr>
+            <tr>
+                <td style="text-align:center;">
+                    <hr>
+                    <hr>
+                    <hr>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <iframe id="edam-browser" frameborder="0" height="720" width="1280" src="http://127.0.0.1:20080/#topic_0091"></iframe>
+                    <br>
+                    <div style="text-align: center;">
+                        <button id="index_buttons" onclick="Edam(); return false;">Select this ontology</button>
+                        <br>
+                        <hr>
+                        <br>
+                        Selected EDAM ontology:&nbsp;<span style="text-align:center;">{{storededam}}</span>
+                    </div>
+                </td>
+            </tr>
+            <div>
+                <input type="hidden" id="stored_edam" name="stored_edam" value="{{storededam}}">
+                <textarea id="res" name="res" style="visibility:hidden;"></textarea>
+            </div>
     </form>
     <tr>
-        <td><button id="index_buttons" onclick="seekCreate()">Upload File</button></td>
+        <td>
+            <button id="index_buttons" onclick="seekCreate()">Upload File</button>
+        </td>
     </tr>
     {% endif %}
     <br />
     </table>
 </div>
 <br />
-<!-- <iframe id="webpage" name="webpage" height="1080px" width="1920px" border="0"></iframe> -->
+<div id="loading" style="text-align:center;display:none;float: none;">
+    Checking the server. Please wait...<br>
+    <img id="loadingimg" src="{% static 'img/wait.gif' %}" width="15%" height="15%">
+</div>
 <div id="footer">
     <div class="container">
         <br />
