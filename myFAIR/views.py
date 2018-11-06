@@ -518,6 +518,8 @@ def seek(request):
                                 request.session.get('username'),
                                 request.session.get('password'),
                                 fullname)
+            if userid is None:
+                return HttpResponseRedirect(reverse('seek'))
             if request.POST.get("projects") is not None and request.POST.get('user') is not None:
                 selected_project = request.POST.get("projects").split(',')[0]
                 selected_project_name = request.POST.get("projects").split(',')[1]
@@ -635,7 +637,7 @@ def seek(request):
                     request.POST.get('newassay')
                 )
                 if not seekcheck:
-                    err = "No permission to edit this study"
+                    return HttpResponseRedirect(reverse('seek'))
             if request.FILES.get('uploadfiles'):
                 upload_dir = (
                     "tmp" +
@@ -813,16 +815,18 @@ def get_seek_userid(server, username, password, fullname):
         fullname: Full name of the user in SEEK.
     
     Returns:
-        The user ID based on the full name of the user.
+        The user ID based on the full name of the user or None.
     """
     userquery = ("curl -X GET " + server + "/people -H \"accept: application/json\"")
     getpeople = subprocess.Popen(
         [userquery], stdout=subprocess.PIPE, shell=True).communicate()[0].decode()
     jsonpeople = json.loads(getpeople)
+    userid = None
     for uid in range(0, len(jsonpeople["data"])):
+        print(jsonpeople["data"][uid]["attributes"]["title"])
         if jsonpeople["data"][uid]["attributes"]["title"] == fullname:
-            userid = jsonpeople["data"][uid]["id"]
-    return str(userid)
+            userid = str(jsonpeople["data"][uid]["id"])
+    return userid
 
 
 def get_seek_investigations(username, password, storage):
