@@ -1,82 +1,107 @@
-# myFAIR analysis @ EMC
+# myFAIR
 
-  * [Dependencies](#dependencies)
-  * [Installation Instructions](#installation-instructions)
-  * [Run myFAIR with B2DROP](#run-myfair-b2drop)
-  * [Upload fies to SEEK](#upload-files-seek)
-  * [Run myFAIR with SEEK](#run-myfair-seek)
-  * [See results](#see-results)
-  * [Using GEO files](#using-geo)
-  * [Store your history](#store-history)
-  * [Run the analysis again](#rerun-analysis)
+[Dependencies](#dependencies)<br>
+[Installation Instructions](#installation-instructions)<br>
+[Install myFAIR](#install-myfair)<br>
+[Install SEEK](#install-seek)<br>
+[Galaxy](#galaxy)<br>
+[Run myFAIR with B2DROP](#run-myfair-b2drop)<br>
+[Create a new study](#create-new-study)<br>
+[Create a new assay](#create-new-assay)<br>
+[Upload fies to SEEK](#upload-files-seek)<br>
+[Run myFAIR with SEEK](#run-myfair-seek)<br>
+[See results](#see-results)<br>
+[Store your history](#store-history)<br>
+[Run the analysis again](#rerun-analysis)
 
 For this testcase we are using variant selection by GEMINI analysis using genome in the bottle data. Specifically, we will be using Ashkenazim Father-Mother-Son trio data from the Personal Genome Project. You can download the down sampled version of the dataset created by the GEMINI team from a GIAB trio dataset.
 The vcf file can be found [here](https://bioinf-galaxian.erasmusmc.nl/galaxy/library/list#folders/F8ae2ca084c0c0c70/datasets/e4e82f84348cba8c) and the ped file can be found [here](https://bioinf-galaxian.erasmusmc.nl/galaxy/library/list#folders/F8ae2ca084c0c0c70/datasets/5e4dbb32432c1676).
 
-# <a name="dependencies"></a>Dependencies
-* Python 3.6 or higher
-* Django 2.0 or higher
-* Bioblend 0.8.1 or hger
-* rdflib
-* lftp 4.6.3a
-* Java SE Development Kit 8u112
-* Apache Jena Fuseki 2.4.1
-* An account on a local or external Galaxy server with the following tools available:
-    * GEMINI (load, autosomal recessive/dominant, de novo, comp hets)
-    * Add Column, Strip Header and File Concatenate (all can be found under the name file_manipulation in the Galaxy tool shed)
-    * The Galaxy server should allow an FTP connection in order for myFAIR to send the data.
+## <a name="dependencies">Dependencies</a>
 
-# <a name="installation-instructions"></a> Installation Instructions
-**Install myFAIR on your existing VM**
+* Python 3.6 or higher
+* Django 2.1.2 or higher
+* Bioblend 0.11.0 or higer
+* rdflib 4.2.2 or higher
+* lftp 4.8.1 or higher
+* python-magic 0.4.15 or higher
+* plotly 3.3.0 or higher
+* An account on a local or external Galaxy server with the following tools available:
+    1. GEMINI (load, autosomal recessive/dominant, de novo, comp hets)
+    2. Add Column, Strip Header and File Concatenate (all can be found under the name file_manipulation in the Galaxy tool shed)
+    3. The Galaxy server should allow an FTP connection in order for myFAIR to send the data.
+* An account to an external SEEK server or a local SEEK server.
+
+## <a name="installation-instructions">Installation Instructions</a>
+
+### <a name="install=myfair">Install myFAIR</a>
 
 To install myFAIR on your existing Virtual Machine follow these steps:
 
-1. Install all dependencies.
-2. Download or clone myFAIR to your home directory. The latest version can be found [here](https://github.com/ErasmusMC-Bioinformatics/myFAIR).
-3. Change the Galaxy server setting by changing the **galaxy.ini.sample** file. Change the port to 8000 (change port if needed) and change the host to 0.0.0.0
-4. Run the server by opening the terminal and type: **python3 myFAIR/manage.py runserver 0.0.0.0:8080 (change port if needed)** (please make sure manage.py have the right permissions: **chmod +x manage.py**)
-5. To run the Apache Fuseki Server open the terminal and type:  **fuseki location/fuseki start**
-6. Create a new dataset in Fuseki called "ds".
-7. Start the Galaxy server by opening the terminal and type: **galaxy location/run.sh**
-8. Download the Gemini workflow by importing a workflow using this url: https://usegalaxy.org/u/rickjansen/w/training-gemini-vcfanalysis-11112016.
-9. Test if 127.0.0.1:8080(or other chosen port) shows the myFAIR login page and that 127.0.0.1:8000(or other chosen port) shows the Galaxy page. To test fuseki go to 127.0.0.1:3030 and see if there is a green circle next to "Server status".
-10. Download the Gemini annotation files [here](https://bioinf-galaxian.erasmusmc.nl/owncloud/index.php/s/JuH6c97y5lAVSf2) and place the folder "gemini_annotation" in the home folder.
+#### Install dependencies
 
-Optional:
+```bash
+sudo apt update
+sudo apt upgrade
+sudo apt install python3 python3-pip lftp
+pip3 install django bioblend rdflib plotly python-magic
+```
 
-11. Install a SEEK server. You can download SEEK [here](https://github.com/seek4science/seek). Click [here](https://docs.seek4science.org/tech/install.html) on how to install a local SEEK server.
+#### Get myFAIR
 
-After these steps, you can run the myFAIR analysis.
+```bash
+git clone https://github.com/ErasmusMC-Bioinformatics/myFAIR
+```
 
-**Install and use our VM**
+#### Run the server
 
-You can test myFAIR on our existing Virtual Machine.
-Everything is already pre-installed and can be used after following these steps below:
+Run the following command to run the myFAIR server.
 
-1. Download the Virtual Machine [here](https://bioinf-galaxian.erasmusmc.nl/owncloud/index.php/s/Qr5Nu6CBotyvG1Z). **(The size of the Virtual Machine will be large due to the annotation files needed for Gemini, please make sure you have enough free space to run the Virtual Machine)**
-2. Add the Virtual Machine and start the Virtual Machine (Password is "fair@emc")
-3. Download or clone myFAIR to your home directory. The latest version can be found [here](https://github.com/ErasmusMC-Bioinformatics/myFAIR).
-4. Overwrite the old myFAIR version with the new version.
-5. Open the terminal and start the Fuseki Server by typing: **.local/apache-jena-fuseki-2.4.1/fuseki start**
-6. Test if 127.0.0.1:8080 shows the myFAIR login page and that https://usegalaxy.org shows the Galaxy page. To see if the fuseki server is running, go to 127.0.0.1:3030 and see if there is a green circle next to "Server status:".
+```bash
+python3 myFAIR/manage.py runserver 0.0.0.0:8080
+```
 
-Optional:
+#### Set permissions
 
-7. Install a SEEK server. You can download SEEK [here](https://github.com/seek4science/seek). Click [here](https://docs.seek4science.org/tech/install.html) on how to install a local SEEK server.
+If manage.py does not have the right permissions run the following command:
 
-# <a name="run-myfair-b2drop"></a> Run myFAIR with B2DROP
+```bash
+chmod +x myFAIR/manage.py
+```
+
+#### Test the server
+
+Go to 127.0.0.1:8080 (or other chosen port) and check if the myFAIR login page is visible.
+
+### <a name="install-seek">Install SEEK</a>
+
+You can download the latest version of SEEK [here](https://github.com/seek4science/seek). For more information on installing SEEK click [here](https://docs.seek4science.org/tech/install.html).
+
+Follow [these](https://docs.seek4science.org/tech/setting-up-virtuoso.html) instructions to install the Virtuoso triple store and connect the triple store to your SEEK server.
+
+
+### <a name="galaxy">Galaxy</a>
+
+Go to [usegalaxy](https://usegalaxy.eu) and create an account or log in with an existing account to see if it is still working.
+
+#### Importing the GEMINI workflow
+
+Import the GEMINI workflow using this url: https://usegalaxy.eu/u/rickjansen/w/geminivcfanalysis.
+
+
+
+<!-- # <a name="run-myfair-b2drop"></a> Run myFAIR with B2DROP
 In order to run myFAIR you need to follow these steps:
 
 1. Follow the Installation Instructions.
 2. Open or download a browser (Firefox or Chrome recommended).
-3. Go to the usegalaxy page: https://usegalaxy.org/
-4. Login to your account or create a new account by clicking "User" and then clicking "Register".
+3. Go to the usegalaxy page: https://usegalaxy.eu/
+4. Login to your account or create a new account by clicking "Login or register" and then clicking "Register".
 5. Visit the B2DROP or page and create a folder where you can put your datafiles. You can also use the bioinf-galaxian Owncloud if you have an account.
     * If you do not have a B2DROP account please visit: https://b2drop.eudat.eu/index.php/login and click register.
     * If you have a B2DROP account, please log in and create a new folder with the name of your investigation.
     * Add a folder with the name of your study.
     * Add the .vcf and .ped file to the study folder.
-    If you are using the GEO data matrix, please put that file in a folder.
 6. Visit the myFAIR analysis page on 127.0.0.1:8080 (if selected other port please make sure the url is correct)
 7. Login using your Galaxy credentials (username/email and password) and your B2DROP or bioinf-galaxian credentials.
 8. Upload files to the Fuseki server:
@@ -87,7 +112,6 @@ In order to run myFAIR you need to follow these steps:
     * Choose which file is your datafile (vcf file) and which file is your metadata (ped file).
     * Tag the data with a disease and with a type of operation. If the tagged disease is found in DisGeNET a link will be stored in the triple store, if the type of operation is found in EDAM a link to the EDAM page will be stored.
     * Click "Store Triples" to start the creation of new triples and store them in the Fuseki server.
-    * If you are using the GEO data matrix, please choose the "datafile" option for all data matrix files you want to upload. If you do not have a metadata file, click "Store Triples". If you already have a metadata file please select "metadata" for that file and then click "Store Triples".
     * You will be send back to the homepage.
 
 9. Find your files or samples:
@@ -105,7 +129,7 @@ In order to run myFAIR you need to follow these steps:
     *   Click on the "Search >>" button to start searching for your files.
 
 10. Send the files to Galaxy and run a workflow:
-    *   After finding your files, select the "Training_gemini_vcfanalysis_11112016" workflow by clicking on the dropdown menu.
+    *   After finding your files, select the "GEMINI_VCF_Analysis" workflow by clicking on the dropdown menu.
     *   Select the file you want to send and choose the options you want to use.
     *   Enter a new history name or leave empty to automatically generate a new history name.
     *   Then click on the "send to galaxy" button to start sending the files to the Galaxy ftp folder and import the files in a new history. After importing the files run the selected workflow.
@@ -113,67 +137,100 @@ In order to run myFAIR you need to follow these steps:
 A checkmark will appear when the files are send to galaxy and the workflow is finished (if you selected a workflow).
 If something went wrong (workflow failed, not selected a file or you get timed-out) an error message will appear.
 12. If you do not want to use a workflow you can choose "Use Galaxy" to only send the datafiles to Galaxy and work with the files directly in Galaxy.
-13. You can visit the Galaxy page to see if the workflow is running by going to https://usegalaxy.org/ or go to the next step.
+13. You can visit the Galaxy page to see if the workflow is running by going to https://usegalaxy.eu/ or go to the next step. -->
 
-# <a name="upload-files-seek"></a> Upload files to SEEK
-1. Follow the Installation Instructions.
-2. Open or download a browser (Firefox or Chrome recommended).
-3. Go to the SEEK URL to create a new project.
-4. Add an investigation to that project.
-5. Logon to the myFAIR webpage with your Galaxy and SEEK credentials.
-6. Got to the "Upload to SEEK" page.
-7. Select the project you have just created and then select the investigation.
-8. Select the create new study option.
-9. Enter a study name, title and description.
-10. Click on the create study button.
-11. After creating a study select the newly created study.
-12. Select the create new assay option.
-13. Enter an assay name, title and description.
-14. Select an assay type and a technology type.
-15. Click on the create assay button.
-16. Select the newly created assay.
-17. Enter a data file title and description.
-18. Select the file to upload.
-19. Click upload file.
-20. Go to the homepage.
+## <a name="isa-structure">ISA structure</a>
 
-# <a name="run-myfair-b2drop"></a> Run myFAIR with SEEK
-To run myFAIR with SEEK data you need to follow the Upload files to SEEK steps first. After uploading the data files you can search the data from the homepage.
+### <a name="create-new-study">Create a new study</a>
+
+Follow these steps to create a new study on the SEEK server you entered when logging in.
+
+1. Logon to the myFAIR webpage with your Galaxy and SEEK credentials.
+2. Got to the *Upload to SEEK* page.
+3. Enter your full name (same as registered in SEEK)
+4. Select the project from the dropdown menu.
+5. Select the investigation from the dropdown menu.
+6. Select the *create new study?* option.
+7. Enter a name, title and description for the new study. Click *Create new study*
+
+### <a name="create-new-assay">Create a new assay</a>
+
+Follow these steps to create a new assay on the SEEK server you entered when logging in. This option only works when you have the right permissions to the SEEK study.
+
+1. Logon to the myFAIR webpage with your Galaxy and SEEK credentials.
+2. Got to the *Upload to SEEK* page.
+3. Enter your full name (same as registered in SEEK)
+4. Select the project from the dropdown menu.
+5. Select the investigation from the dropdown menu.
+6. Select the study from the dropdown menu.
+7. Select the *create new assay?* option.
+8. Enter a name, title and description for the new assay.
+9. Select assay type from the dropdown menu.
+10. Select technology type from the dropdown menu.
+11. Click on the *Create new assay* button.
+
+## <a name="upload-files-seek">Upload files to SEEK</a>
+
+Follow these steps to upload a data file to an assay on the SEEK server. This option only works when you have the right permissions to the SEEK assay.
+
+1. Logon to the myFAIR webpage with your Galaxy and SEEK credentials.
+2. Got to the *Upload to SEEK* page.
+3. Enter your full name (same as registered in SEEK)
+4. Select the project from the dropdown menu.
+5. Select the investigation from the dropdown menu.
+6. Select the study from the dropdown menu.
+7. Select the assay from the dropdown menu.
+8. Enter a data file title and description.
+9. Select the file to upload.
+10. Tag the data file with a diseas by entering a disease in the DisGeNET textbox and click the *Search* button. Select the disease from the dropdown menu after the search is finished.
+11. tag the data file with an EDAM operation by selecting the type of operation from the EDAM browser. Click the *Select this ontology* button to add this ontology.
+
+## <a name="run-myfair-seek">Run myFAIR with SEEK</a>
+
+To run myFAIR with SEEK data you need to follow the Upload files to SEEK steps first or make sure data is already uploaded using the SEEK GUI instead. After uploading the data files you can search the data from the homepage.
 
 You can search the SEEK data based on the investigation, study or assay. You can search in on of the three available textboxes.
 
 Follow the next steps to search for data files linked to an investigation, study or assay:
+
 1. Enter the investigation name in the first textbox or a study name in the second textbox or an assay name in the third textbox to search for the data linked to an investigation, study or assay.
 2. Click the Search button to show the results.
 3. Select the data you want to send to Galaxy and select the "Send datafile only" option.
 4. Select the filetype and database.
 5. Enter a history name and click the send to Galaxy button.
 
-# <a name="see-results"></a> See results
+Results will be automaticallyuploaded to the SEEK server. A new assay will be created with the studyname + __result__ + a unique ID. This is done to make it an easier process to find assays that are results instead of the regular assays created by the user.
+
+## <a name="see-results">See results</a>
+
 The following steps can be used to view the results of your analysis.
 
 1. Enter the study name that you want to get the results from.
-2. Click on the "Search >>" button to start searching for all results based on that study.
+2. Click on the *Search >>* button to start searching for all results based on that study.
 3. Select the results you want to view.
-4. Click on the "Show results" button.
+4. Click on the *Show results* button.
 5. A new page will open with the input and output files  and the analysis details.
-6. Click on any of the "Download" buttons to download that file.
+6. Click on the view icon to view the SEEK data in the SEEK GUI or click on the download icon to download that file to your computer.
 
-# <a name="store-history"></a> Store your history
-myFAIR will not upload your results to Owncloud or B2DROP when there was no workflow used. In order to send your results to Owncloud or B2DROP to make them searchable follow these steps:
+## <a name="store-history">Store your history</a>
+
+myFAIR will not upload your results to Owncloud or B2DROP when there was no workflow used. To send your results to Owncloud or B2DROP and make them searchable, please follow these steps:
 
 1. Choose an investigation folder in the dropdown menu (top level folder).
 2. Click the "Get studies" button to find all studies in the investigation.
 3. Select the history you want to store in the Owncloud folder.
 4. Select the study you want to store the results in (sub folder in the investigation folder).
-3. Click on the "Send history to Owncloud" button.
-4. A new page will appear telling you the results are stored and are now searchable in myFAIR.
-5. Follow the "See results" steps to view your results.
+5. Click on the *Send history to Owncloud* button.
+6. A new page will appear telling you the results are stored and are now searchable in myFAIR.
+7. Follow the *See results* steps to view your results.
 
-# <a name="rerun-analysis"></a> Run the analysis again
+## <a name="rerun-analysis">Run the analysis again</a>
+
 Follow these steps to run the analysis shown in the result page again:
 
-1. In the results page click on the "Run again" button.
+1. In the results page click on the *Run again* button.
 2. A cat will appear to show that the analysis is running.
-3. After the files are send to Galaxy a checkmark will appear and you will be redirected the homepage.
+3. After the files are send to Galaxy a checkmark will appear and you will be redirected the result page.
 4. Visit the Galaxy page to see the analysis.
+
+The results generated from rerunning the analysis will not be stored in SEEK or ownCloud. To store a new result please run a new analysis with the same data and same workflow. Click on the Erasmus MC logo to go back to the homepage and search for another result or do run another analysis.
