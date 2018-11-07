@@ -210,7 +210,7 @@ function sparqlQuery() {
                 "PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> " +
                 "PREFIX dcterms: <http://purl.org/dc/terms/> " +
                 "PREFIX jerm: <http://jermontology.org/ontology/JERMOntology#> " +
-                "SELECT DISTINCT ?file ?filetitle ?investigation ?study ?assay WHERE {" +
+                "SELECT DISTINCT ?fileurl ?filetitle ?investigation ?study ?assay WHERE {" +
                 "?i dcterms:title ?investigation ; " +
                 "rdf:type jerm:Investigation ." +
                 "?i jerm:itemProducedBy ?projectid . " +
@@ -219,8 +219,8 @@ function sparqlQuery() {
                 "?studyid dcterms:title ?study . " +
                 "?studyid jerm:hasPart ?assayid . " +
                 "?assayid dcterms:title ?assay . " +
-                "?file jerm:isPartOf ?assayid . " + 
-                "?file dcterms:title ?filetitle ." +
+                "?fileurl jerm:isPartOf ?assayid . " + 
+                "?fileurl dcterms:title ?filetitle ." +
                 "FILTER regex(?investigation, '" + ISEARCH + "', 'i') . " +
                 "FILTER regex(?study, '" + SSEARCH + "', 'i') . " +
                 "FILTER regex(?assay, '" + ASEARCH + "', 'i') . " +
@@ -384,6 +384,11 @@ function fillTable(result) {
                         displayName.indexOf("http://") >= 0 ||
                         displayName.indexOf("https://") >= 0
                     ) {
+                        displayName = (
+                            SERVER + '/' +
+                            displayName.split('/')[3] + '/' +
+                            displayName.split('/')[4]
+                        )
                         table += '<td><span><a target="_blank" href="' +
                             displayName + '">' + displayName +
                             '</a></span></td>';
