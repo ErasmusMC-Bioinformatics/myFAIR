@@ -8,10 +8,9 @@ var SERVER = document.getElementById('storagename').innerHTML
 var STORAGETYPE = document.getElementById('storage-type').innerHTML
 if(STORAGETYPE === "SEEK") {
     if(SERVER.indexOf(":3000") > 0) {
-        SERVER = SERVER.replace(":3000", "")
-        var SPARQL_ENDPOINT = SERVER + ':8890/sparql?default-graph-uri=&query='
+        var SPARQL_ENDPOINT = SERVER.replace(":3000", "") + ':8890/sparql?default-graph-uri=&query='
     } else {
-        var SPARQL_ENDPOINT = SERVER + ':8890/sparql?default-graph-uri=seek:public&query='
+        var SPARQL_ENDPOINT = SERVER.replace(":3000", "") + ':8890/sparql?default-graph-uri=seek:public&query='
     }
     document.getElementById("ssearch").style.display = "block";
     document.getElementById("asearch").style.display = "block";
