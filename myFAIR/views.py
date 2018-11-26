@@ -115,8 +115,8 @@ def index(request):
         Exception: Failed to het galaxy user information.
     """
     if (request.method == 'POST' and
-                request.session.get('username') is None
-            ):
+        request.session.get('username') is None
+    ):
         login(request)
     else:
         pass
@@ -605,7 +605,8 @@ def seek(request):
                     res_assays = subprocess.Popen(
                         [assay_search_query], stdout=subprocess.PIPE, shell=True).communicate()[0].decode()
                     found_assays = json.loads(res_assays)
-                    assay_names[assay_id] = found_assays["data"]["attributes"]["title"]
+                    if "__result__" not in found_assays["data"]["attributes"]["title"]:
+                        assay_names[assay_id] = found_assays["data"]["attributes"]["title"]
             cns = request.POST.get('cns')
             cna = request.POST.get('cna')
             if (
