@@ -477,6 +477,7 @@ def seek(request):
     fullname = ""
     user_dict = {}
     tags = []
+    edamterm = ""
     if request.POST.get('stored_disgenet') is not None:
         selected_disgenet_tags = request.POST.get('disgenetresult')
         stored_disgenet = request.POST.get('disgenetresult')
@@ -506,6 +507,9 @@ def seek(request):
                 if "URI" in edamdata:
                     uri = edamdata[4:]
                     stored_edam = uri
+                if "Term" in edamdata:
+                    edamdata = edamdata.split('\t')
+                    edamterm = edamdata[1].strip('\r')
         if request.POST.get('disgenet') is not None and request.POST.get('disgenet') != "":
             selected_disgenet_tags = request.POST.get('disgenetresult')
             dids = disgenet(request.POST.get('disgenet'))
@@ -536,8 +540,7 @@ def seek(request):
                     "investigations").split(',')[1]
             elif request.POST.get("inv") and request.POST.get("proj") is not None:
                 selected_investigation = request.POST.get("inv").split(',')[0]
-                selected_investigation_name = request.POST.get("inv").split(',')[
-                    1]
+                selected_investigation_name = request.POST.get("inv").split(',')[1]
             if request.POST.get("studies") is not None:
                 selected_study = request.POST.get("studies").split(',')[0]
                 selected_study_name = request.POST.get("studies").split(',')[1]
@@ -702,6 +705,7 @@ def seek(request):
                  'disgenettags': selected_disgenet_tags,
                  'storeddisgenet': stored_disgenet,
                  'storededam': stored_edam,
+                 'edamterm': edamterm,
                  'edam': eids,
                  'err': err})
 
