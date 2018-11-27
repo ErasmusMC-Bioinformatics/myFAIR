@@ -355,12 +355,65 @@
             {% endif %}
             {% if as and assays %}
             <tr>
-                <td style="text-align:center;">
-                    <hr>
-                    <hr>
-                    <hr>
+                <td><b><i>TAG DisGeNET</i></b></td>
+            </tr>
+            <tr>
+                <td>
+                    Find DisGeNET tag: 
+                    <input type="text" id="disgenet" name="disgenet">
+                    <button id="index_buttons" onclick="seekCreate()">Search</button>
                 </td>
             </tr>
+            <tr>
+                <td>
+                    {% if disgenet or "http" in storeddisgenet %}
+                    <select id="disgenetresult" name="disgenetresult" class="select-folder" onchange="seekCreate()">
+                        <optgroup label="available DisGeNET results:">
+                            <option value="{{storeddisgenet}}">{{storeddisgenet}}</option>
+                            {% for uri, disease in disgenet.items %}
+                                <option value="{{ uri }}">{{ disease }}</option>
+                            {% endfor %}
+                        </optgroup>
+                    </select>
+                    {% else %}
+                    &nbsp;
+                    {% endif %}
+                    <input type="hidden" id="stored_disgenet" name="stored_disgenet" value="{{disgenettags}}">
+                </td>
+            </tr>
+            {% endif %}
+            {% if "http" in storeddisgenet %}
+            <tr>
+                <td><b><i>TAG EDAM</i></b></td>
+            </tr>
+            <tr>
+                <td>
+                    <iframe id="edam-browser" frameborder="0" height="720" width="1280" src="http://127.0.0.1:20080/#topic_0091"></iframe>
+                    <br>
+                    <div style="float:left;">
+                        {% if "http" in storededam %}
+                            <button id="index_buttons" onclick="Edam(); return false;">Change ontology</button>
+                        {% else %}
+                            <button id="index_buttons" onclick="Edam(); return false;">Select this ontology</button>
+                        {% endif %}
+                    </div>
+                        {% if "http" in storededam %}
+                            <p style="color:rgb(250, 75, 0);font-size:12pt;font-weight:700;text-align: right;">
+                                This ontology will be added to the data file:
+                            </p>
+                            <p style="color:rgb(250, 125, 0);font-size:12pt;font-weight:600;text-align: right;">
+                                <span><a href="{{storededam}}" target="blank">{{edamterm}}</a></span>
+                            </p>
+                        {% endif %}
+                    <div style="float:right;"></div>
+                </td>
+            </tr>
+            <div>
+                <input type="hidden" id="stored_edam" name="stored_edam" value="{{storededam}}">
+                <textarea id="res" name="res" style="visibility:hidden;"></textarea>
+            </div>
+            {% endif %}
+            {% if "http" in storededam %}
             <tr>
                 <td><b><i>UPLOAD DATA FILE:</i></b></td>
             </tr>
@@ -379,74 +432,18 @@
             <tr>
                 <td>
                     <b><i>Select file to upload: </i></b>
-                    <input type="file" id="uploadfiles" name="uploadfiles" multiple="multiple" />
+                    <input type="file" id="uploadfiles" name="uploadfiles" />
                 </td>
             </tr>
-            <tr>
-                <td style="text-align:center;">
-                    <hr>
-                    <hr>
-                    <hr>
-                </td>
-            </tr>
-            <tr>
-                <td><b><i>TAG ONTOLOGIES</i></b></td>
-            </tr>
-            <tr>
-                <td>
-                    Find DisGeNET tag: 
-                    <input type="text" id="disgenet" name="disgenet">
-                    <button id="index_buttons" onclick="seekCreate()">Search</button>
-                </td>
-            </tr>
-            <tr>
-                <td>
-                    <select id="disgenetresult" name="disgenetresult" class="select-folder" onchange="seekCreate()">
-                        <optgroup label="available DisGeNET results:">
-                            <option value="{{storeddisgenet}}">{{storeddisgenet}}</option>
-                            {% for uri, disease in disgenet.items %}
-                                <option value="{{ uri }}">{{ disease }}</option>
-                            {% endfor %}
-                        </optgroup>
-                    </select>
-                    <input type="hidden" id="stored_disgenet" name="stored_disgenet" value="{{disgenettags}}">
-                </td>
-            </tr>
-            <tr>
-                <td style="text-align:center;">
-                    <hr>
-                    <hr>
-                    <hr>
-                </td>
-            </tr>
-            <tr>
-                <td>
-                    <iframe id="edam-browser" frameborder="0" height="720" width="1280" src="http://127.0.0.1:20080/#topic_0091"></iframe>
-                    <br>
-                    <div style="text-align: center;">
-                        <button id="index_buttons" onclick="Edam(); return false;">Select this ontology</button>
-                        <br>
-                        <hr>
-                        <br>
-                        Selected EDAM ontology:&nbsp;<span style="text-align:center;">{{storededam}}</span>
-                    </div>
-                </td>
-            </tr>
-            <div>
-                <input type="hidden" id="stored_edam" name="stored_edam" value="{{storededam}}">
-                <textarea id="res" name="res" style="visibility:hidden;"></textarea>
-            </div>
     </form>
-    <tr>
-        <td>
-            <button id="index_buttons" onclick="seekCreate()">Upload File</button>
-        </td>
-    </tr>
+        <tr>
+            <td>
+                <button id="index_buttons" onclick="seekCreate()">Upload File</button>
+            </td>
+        </tr>
     {% endif %}
-    <br />
     </table>
 </div>
-<br />
 <div id="loading" style="text-align:center;display:none;float: none;">
     Checking the server. Please wait...<br>
     <img id="loadingimg" src="{% static 'img/wait.gif' %}" width="15%" height="15%">
