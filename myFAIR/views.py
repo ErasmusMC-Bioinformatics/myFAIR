@@ -670,7 +670,7 @@ def seek(request):
                     request.session.get('username'),
                     request.session.get('password'),
                     request.session.get('storage'),
-                    request.POST.get('title'),
+                    request.POST.get('datatitle'),
                     os.path.join(upload_full_path, upload.name),
                     upload.name,
                     content_type,
