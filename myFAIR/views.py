@@ -51,17 +51,11 @@ def login(request):
         password = request.POST.get('password')
         galaxypass = request.POST.get("galaxypass")
         galaxyemail = request.POST.get("galaxyemail")
+        storagetype = request.POST.get("storagetype")
         noexpire = request.POST.get('no-expire')
         if storage != "":
+            request.session['storage_type'] = storagetype
             request.session['storage'] = storage
-            storage_command = ("curl -s " + storage)
-            storage_call = subprocess.Popen(
-                [storage_command], stdout=subprocess.PIPE, shell=True
-            ).communicate()[0].decode()
-            if "seek4science" in storage_call or "fair-dom" in storage_call:
-                request.session['storage_type'] = "SEEK"
-            else:
-                request.session['storage_type'] = "nextcloud"
         else:
             request.session.flush()
         if galaxypass != "":
@@ -140,56 +134,52 @@ def index(request):
         password = request.session.get('password')
         storage = request.session.get('storage')
         server = request.session.get('server')
-        if investigation is not None and investigation != "":
-            oc_folders, inv_folders = get_study_folders(
-                storage,
-                request.session.get('storage_type'),
-                username,
-                password,
-                investigation
-            )
-        else:
-            inv_folders, oc_folders = get_investigation_folders(
-                storage,
-                request.session.get('storage_type'),
-                username,
-                password
-            )
-        for inv in inv_folders:
-            if "/owncloud/" in request.session.get('storage'):
-                investigation_name = inv.replace(
-                    '/owncloud/remote.php/webdav/', '').replace('/', '')
-                if "." not in investigation_name:
-                    new = investigation_name
-                    investigations.append(new)
-            elif request.session.get('storage_type') == "SEEK":
-                investigations = get_seek_investigations(
-                    username, password, storage)
+        if request.session.get("storage_type") != "SEEK":
+            if investigation is not None and investigation != "":
+                oc_folders, inv_folders = get_study_folders(
+                    storage,
+                    request.session.get('storage_type'),
+                    username,
+                    password,
+                    investigation
+                )
             else:
-                investigation_name = inv.replace(
-                    '/remote.php/webdav/', '').replace('/', '')
-                if "." not in investigation_name:
-                    new = investigation_name
-                    investigations.append(new)
-        for oc in oc_folders:
-            if "/owncloud/" in request.session.get('storage'):
-                study = oc.replace(
-                    '/owncloud/remote.php/webdav/', '')
-                study = study.replace('/', '').replace(investigation, '')
-                if "." not in study:
-                    new = study
-                    folders.append(new)
-            elif request.session.get('storage_type') == "SEEK":
-                folders.append(oc)
-            else:
-                study = oc.replace(
-                    '/remote.php/webdav/', '')
-                study = study.replace('/', '').replace(investigation, '')
-                if "." not in study:
-                    new = study
-                    folders.append(new)
-        folders = list(filter(None, folders))
-        investigations = list(filter(None, investigations))
+                inv_folders, oc_folders = get_investigation_folders(
+                    storage,
+                    request.session.get('storage_type'),
+                    username,
+                    password
+                )
+            for inv in inv_folders:
+                if "/owncloud/" in request.session.get('storage'):
+                    investigation_name = inv.replace(
+                        '/owncloud/remote.php/webdav/', '').replace('/', '')
+                    if "." not in investigation_name:
+                        new = investigation_name
+                        investigations.append(new)
+                else:
+                    investigation_name = inv.replace(
+                        '/remote.php/webdav/', '').replace('/', '')
+                    if "." not in investigation_name:
+                        new = investigation_name
+                        investigations.append(new)
+            for oc in oc_folders:
+                if "/owncloud/" in request.session.get('storage'):
+                    study = oc.replace(
+                        '/owncloud/remote.php/webdav/', '')
+                    study = study.replace('/', '').replace(investigation, '')
+                    if "." not in study:
+                        new = study
+                        folders.append(new)
+                else:
+                    study = oc.replace(
+                        '/remote.php/webdav/', '')
+                    study = study.replace('/', '').replace(investigation, '')
+                    if "." not in study:
+                        new = study
+                        folders.append(new)
+            folders = list(filter(None, folders))
+            investigations = list(filter(None, investigations))
         try:
             if request.method == "POST":
                 gusername, workflows, his, dbkeys = get_galaxy_info(
@@ -445,6 +435,125 @@ def create_assay(username, password, server, userid, projectid, studyid,
         return False
 
 
+def open_sparql_store():
+    """Opening the SEEK SPARQL end-point.
+
+    Returns:
+        The SPARQL end-point.
+    """
+    g = rdflib.ConjunctiveGraph('SPARQLStore')
+    g.open("http://127.0.0.1:8890/sparql/")
+    return g
+
+
+def seek_sparql_projects():
+    """Run SPARQL query to find all available project on the SEEK server.
+
+    Returns:
+        Dictionary with all project in SEEK.
+    """
+    projects = {}
+    g = open_sparql_store()
+    p_sparql_query = (
+        "prefix jerm: <http://jermontology.org/ontology/JERMOntology#>" +
+        "select distinct ?projectid ?projects where {" +
+        "?projectid jerm:title ?projects;" +
+        "rdf:type jerm:Project" +
+        "}"
+    )
+    for row in g.query(p_sparql_query):
+        projects[row[0].split("/")[-1]] = row[1]
+    return projects
+
+
+def seek_sparql_investigations(selected_project_name):
+    """Run SPARQL query to find all investigations on the SEEK server
+    based on a project name.
+    
+    Arguments:
+        selected_project_name: The name of the selected project 
+        in the upload form.
+
+    Returns:
+        Dictionary with all investigations belonging to the selected project.
+    """
+    inv_names = {}
+    g = open_sparql_store()
+    i_sparql_query = (
+        "prefix jerm: <http://jermontology.org/ontology/JERMOntology#>" +
+        "select distinct ?investigationid ?investigation where {" +
+        "?p jerm:title ?project ." +
+        "FILTER regex(?project, \'" + selected_project_name + "\', 'i')" +
+        "?p jerm:hasItem ?investigationid." +
+        "FILTER regex(?investigationid, 'investigations', 'i')" +
+        "?investigationid jerm:title ?investigation" +
+        "}"
+    )
+    for row in g.query(i_sparql_query):
+        inv_names[row[0].strip("rdflib.term.URIRef").split(
+            "/")[-1]] = row[1].strip("rdflib.term.URIRef")
+    return inv_names
+
+
+def seek_sparql_studies(selected_investigation_name):
+    """Run SPARQL query to find all studies on the SEEK server 
+    based on an investigation name.
+    
+    Arguments:
+        selected_investigation_name: The name of the selected investigation 
+        in the upload form.
+
+    Returns:
+        Dicionary with all studies belonging to the selected investigation.
+    """
+    study_names = {}
+    g = open_sparql_store()
+    s_sparql_query = (
+        "prefix jerm: <http://jermontology.org/ontology/JERMOntology#>" +
+        "select distinct ?studyid ?study where {" +
+        "?i jerm:title ?investigation ." +
+        "FILTER regex(?investigation, \'" + selected_investigation_name + "\', 'i')" +
+        "?i jerm:hasPart ?studyid." +
+        "FILTER regex(?studyid, 'studies', 'i')" +
+        "?studyid jerm:title ?study" +
+        "}"
+    )
+    for row in g.query(s_sparql_query):
+        study_names[row[0].strip("rdflib.term.URIRef").split(
+            "/")[-1]] = row[1].strip("rdflib.term.URIRef")
+    return study_names
+
+
+def seek_sparql_assays(selected_study_name):
+    """Run SPARQL query to find all assays on the SEEK server 
+    based on a study name.
+    
+    Arguments:
+        selected_study_name: The name of the selected study 
+        in the upload form.
+    
+    Returns:
+        Dicionary with all assays belonging to the selected study.
+    """
+    assay_names = {}
+    g = open_sparql_store()
+    s_sparql_query = (
+        "prefix jerm: <http://jermontology.org/ontology/JERMOntology#>" +
+        "select distinct ?assayid ?assay where {" +
+        "?s jerm:title ?study ." +
+        "FILTER regex(?study, \'" + selected_study_name + "\', 'i')" +
+        "?s jerm:hasPart ?assayid." +
+        "FILTER regex(?assayid, 'assays', 'i')" +
+        "?assayid jerm:title ?assay" +
+        "}"
+    )
+    for row in g.query(s_sparql_query):
+        assay_names[row[0].strip("rdflib.term.URIRef").split(
+            "/")[-1]] = row[1].strip("rdflib.term.URIRef")
+    return assay_names
+
+
+
 @csrf_exempt
 def seek(request):
     """Getting the investigations, studies and assays based on the 
@@ -456,18 +565,15 @@ def seek(request):
     Arguments:
         request: Getting the information needed to search the SEEK ISA structure.
     """
-    projects = {}
-    selected_project = ""
+    projects = seek_sparql_projects()
+    selected_project_id = ""
     selected_project_name = ""
-    selected_investigation = ""
+    selected_investigation_id = ""
     selected_investigation_name = ""
-    selected_study = ""
+    selected_study_id = ""
     selected_study_name = ""
-    selected_assay = ""
+    selected_assay_id = ""
     selected_assay_name = ""
-    inv_names = {}
-    study_names = {}
-    assay_names = {}
     searches = {}
     cns = ""
     cna = ""
@@ -490,16 +596,6 @@ def seek(request):
         stored_edam = None
     if request.session.get('storage') is None:
         return HttpResponseRedirect(reverse('index'))
-    get_projects = "curl -s -X GET \"" + \
-        request.session.get("storage") + \
-        "/projects\" -H \"accept: application/json\""
-    json_projects = subprocess.Popen([get_projects],
-                                     stdout=subprocess.PIPE,
-                                     shell=True).communicate()[0].decode()
-    test_projects = json.loads(json_projects)
-    for x in range(0, len(test_projects["data"])):
-        projects[test_projects["data"][x]["id"]
-                 ] = test_projects["data"][x]["attributes"]["title"]
     if request.method == 'POST':
         if request.POST.get('res') is not None:
             datalist = request.POST.get('res').split("\n")
@@ -526,103 +622,56 @@ def seek(request):
                                      fullname)
             if userid is None:
                 return HttpResponseRedirect(reverse('seek'))
-            if request.POST.get("projects") is not None and request.POST.get('user') is not None:
-                selected_project = request.POST.get("projects").split(',')[0]
-                selected_project_name = request.POST.get(
-                    "projects").split(',')[1]
-            elif request.POST.get("proj"):
-                selected_project = request.POST.get("proj").split(',')[0]
-                selected_project_name = request.POST.get("proj").split(',')[1]
+            # Get projects
+            if request.POST.get("projects") is not None and request.POST.get("inv") is None:
+                selected_project_id = request.POST.get("projects").split(',')[0]
+                selected_project_name = request.POST.get("projects").split(',')[1]
+                inv_names = seek_sparql_investigations(selected_project_name)
+            elif request.POST.get("proj-stored"):
+                selected_project_id = request.POST.get("proj-stored").split(',')[0]
+                selected_project_name = request.POST.get("proj-stored").split(',')[1]
+                inv_names = seek_sparql_investigations(selected_investigation_name)
+            # Get investigations
             if request.POST.get("investigations") is not None:
-                selected_investigation = request.POST.get(
-                    "investigations").split(',')[0]
-                selected_investigation_name = request.POST.get(
-                    "investigations").split(',')[1]
-            elif request.POST.get("inv") and request.POST.get("proj") is not None:
-                selected_investigation = request.POST.get("inv").split(',')[0]
-                selected_investigation_name = request.POST.get("inv").split(',')[1]
+                selected_investigation_id = request.POST.get("investigations").split(',')[0]
+                selected_investigation_name = request.POST.get("investigations").split(',')[1]
+                study_names = seek_sparql_studies(selected_investigation_name)
+            elif request.POST.get("inv-stored"):
+                selected_investigation_id = request.POST.get("inv-stored").split(',')[0]
+                selected_investigation_name = request.POST.get("inv-stored").split(',')[1]
+                study_names = seek_sparql_studies(selected_investigation_name)
+            else:
+                study_names = {}
+            # Get studies
             if request.POST.get("studies") is not None:
-                selected_study = request.POST.get("studies").split(',')[0]
+                selected_study_id = request.POST.get("studies").split(',')[0]
                 selected_study_name = request.POST.get("studies").split(',')[1]
-            elif request.POST.get("stu") is not None and request.POST.get("as") is not None:
-                selected_study = request.POST.get("stu").split(',')[0]
-                selected_study_name = request.POST.get("stu").split(',')[1]
+                assay_names = seek_sparql_assays(selected_study_name)
+            elif request.POST.get("stu-stored"):
+                selected_study_id = request.POST.get("stu-stored").split(',')[0]
+                selected_study_name = request.POST.get("stu-stored").split(',')[1]
+                assay_names = seek_sparql_assays(selected_study_name)
+            else:
+                assay_names = {}
+            # Get assays
             if request.POST.get("assays") is not None:
-                selected_assay = request.POST.get("assays").split(',')[0]
+                selected_assay_id = request.POST.get("assays").split(',')[0]
                 selected_assay_name = request.POST.get("assays").split(',')[1]
-            elif request.POST.get("as") is not None:
-                selected_assay = request.POST.get("as").split(',')[0]
-                selected_assay_name = request.POST.get("as").split(',')[1]
-            if projects and not inv_names:
-                inv_search = []
-                search_project = ("curl -s -X GET \"" + request.session.get(
-                    "storage") + "/projects/" + selected_project +
-                    "\" -H \"accept: application/json\"")
-                project_search_results = subprocess.Popen(
-                    [search_project],
-                    stdout=subprocess.PIPE,
-                    shell=True).communicate()[0].decode()
-                test_search = json.loads(project_search_results)
-                for inv in range(0, len(test_search["data"]["relationships"]["investigations"]["data"])):
-                    inv_search.append(
-                        test_search["data"]["relationships"]["investigations"]["data"][inv]["id"])
-                for inv_id in inv_search:
-                    inv_search_query = "curl -s -X GET \"" + request.session.get(
-                        "storage") + "/investigations/" + inv_id + "\" -H \"accept: application/json\""
-                    res_investogations = subprocess.Popen([inv_search_query], stdout=subprocess.PIPE,
-                                                          shell=True).communicate()[0].decode()
-                    found_investigations = json.loads(res_investogations)
-                    inv_names[inv_id] = found_investigations["data"]["attributes"]["title"]
-            if inv_names and projects and not study_names and selected_investigation != "":
-                study_search = []
-                search_investigation = "curl -s -X GET \"" + request.session.get(
-                    "storage") + "/investigations/" + selected_investigation + "\" -H \"accept: application/json\""
-                investigation_search_results = subprocess.Popen([search_investigation],
-                                                                stdout=subprocess.PIPE,
-                                                                shell=True).communicate()[0].decode()
-                test_search = json.loads(investigation_search_results)
-                for study in range(0, len(test_search["data"]["relationships"]["studies"]["data"])):
-                    study_search.append(
-                        test_search["data"]["relationships"]["studies"]["data"][study]["id"])
-                for study_id in study_search:
-                    study_search_query = "curl -s -X GET \"" + request.session.get(
-                        "storage") + "/studies/" + study_id + "\" -H \"accept: application/json\""
-                    res_studies = subprocess.Popen([study_search_query], stdout=subprocess.PIPE,
-                                                   shell=True).communicate()[0].decode()
-                    found_studies = json.loads(res_studies)
-                    study_names[study_id] = found_studies["data"]["attributes"]["title"]
-            if study_names and not assay_names and selected_study != "":
-                assay_search = []
-                search_assay = "curl -s -X GET \"" + request.session.get(
-                    "storage") + "/studies/" + selected_study + "\" -H \"accept: application/json\""
-                assay_search_results = subprocess.Popen([search_assay],
-                                                        stdout=subprocess.PIPE,
-                                                        shell=True).communicate()[0].decode()
-                test_search = json.loads(assay_search_results)
-                for assay in range(0, len(test_search["data"]["relationships"]["assays"]["data"])):
-                    assay_search.append(
-                        test_search["data"]["relationships"]["assays"]["data"][assay]["id"])
-                for assay_id in assay_search:
-                    assay_search_query = "curl -s -X GET \"" + request.session.get(
-                        "storage") + "/assays/" + assay_id + "\" -H \"accept: application/json\""
-                    res_assays = subprocess.Popen(
-                        [assay_search_query], stdout=subprocess.PIPE, shell=True).communicate()[0].decode()
-                    found_assays = json.loads(res_assays)
-                    if "__result__" not in found_assays["data"]["attributes"]["title"]:
-                        assay_names[assay_id] = found_assays["data"]["attributes"]["title"]
+            elif request.POST.get("as-stored") is not None:
+                selected_assay_id = request.POST.get("as-stored").split(',')[0]
+                selected_assay_name = request.POST.get("as-stored").split(',')[1]
             cns = request.POST.get('cns')
             cna = request.POST.get('cna')
             if (
                 request.POST.get('newstudy')
             ):
-                # create study function
                 create_study(
                     request.session.get('username'),
                     request.session.get('password'),
                     request.session.get('storage'),
                     userid,
-                    request.POST.get("proj").split(',')[0],
-                    request.POST.get("inv").split(',')[0],
+                    selected_project_id,
+                    selected_investigation_id,
                     request.POST.get('stitle'),
                     request.POST.get('sdescription'),
                     request.POST.get('newstudy')
@@ -630,14 +679,13 @@ def seek(request):
             if (
                 request.POST.get('newassay')
             ):
-                # create assay function
                 seekcheck = create_assay(
                     request.session.get('username'),
                     request.session.get('password'),
                     request.session.get('storage'),
                     userid,
-                    request.POST.get("proj").split(',')[0],
-                    request.POST.get("stu").split(',')[0],
+                    selected_project_id,
+                    selected_study_id,
                     request.POST.get('atitle'),
                     request.POST.get('adescription'),
                     request.POST.get('assay_type'),
@@ -675,12 +723,16 @@ def seek(request):
                     upload.name,
                     content_type,
                     userid,
-                    request.POST.get("proj").split(',')[0],
-                    request.POST.get("as").split(',')[0],
+                    selected_project_id,
+                    selected_assay_id,
                     request.POST.get('description'),
                     tags
                 )
                 call(["rm", "-r", upload_full_path])
+    else:
+        inv_names = {}
+        study_names = {}
+        assay_names = {}
     return render(
         request,
         "seek.html",
@@ -689,13 +741,13 @@ def seek(request):
                  'studies': study_names,
                  'assays': assay_names,
                  'userids': user_dict,
-                 'proj': selected_project,
+                 'proj': selected_project_id,
                  'proj_name': selected_project_name,
-                 'inv': selected_investigation,
+                 'inv': selected_investigation_id,
                  'inv_name': selected_investigation_name,
-                 'stu': selected_study,
+                 'stu': selected_study_id,
                  'stu_name': selected_study_name,
-                 'as': selected_assay,
+                 'as': selected_assay_id,
                  'as_name': selected_assay_name,
                  'cns': cns,
                  'cna': cna,
@@ -707,7 +759,8 @@ def seek(request):
                  'storededam': stored_edam,
                  'edamterm': edamterm,
                  'edam': eids,
-                 'err': err})
+                 'err': err,
+                 'storagetype': request.session.get('storage_type')})
 
 
 def get_investigation_folders(storage, storagetype, username, password):
@@ -726,6 +779,7 @@ def get_investigation_folders(storage, storagetype, username, password):
     """
     oc_folders = ""
     if storagetype != "SEEK":
+        pass
         inv_folders = subprocess.Popen([
             "curl -s -X PROPFIND -u" + username + ":" + password +
             " '" + storage + "/' | grep -oPm250 '(?<=<d:href>)[^<]+'"
@@ -733,11 +787,10 @@ def get_investigation_folders(storage, storagetype, username, password):
         ).communicate()[0].decode().split("\n")
     else:
         inv_folders = []
-        seek_investigations = get_seek_investigations(
-            username, password, storage)
-        for it, dummyii in seek_investigations.items():
+        seek_investigations = seek_sparql_investigations("")
+        for dummyii, it in seek_investigations.items():
             inv_folders.append(it)
-            get_seek_studies(username, password, storage, it)
+            seek_sparql_studies(it)
     return inv_folders, oc_folders
 
 
@@ -756,6 +809,7 @@ def get_study_folders(storage, storagetype, username, password, investigation):
         A list of investigationa folders and a list of study folders.
     """
     if storagetype != "SEEK":
+        pass
         oc_folders = subprocess.Popen([
             "curl -s -X PROPFIND -u " + username + ":" + password +
             " '" + storage + "/" + investigation +
@@ -769,13 +823,11 @@ def get_study_folders(storage, storagetype, username, password, investigation):
             stdout=subprocess.PIPE, shell=True
         ).communicate()[0].decode().split("\n")
     else:
-        seek_inv = get_seek_investigations(
-            username, password, storage)
+        seek_inv = seek_sparql_investigations("")
         inv_folders = []
-        for it, dummyii in seek_inv.items():
+        for dummyii, it in seek_inv.items():
             inv_folders.append(it)
-        seek_study = get_seek_studies(
-            username, password, storage, it)
+        seek_study = seek_sparql_studies(it)
         oc_folders = []
         for st, dummysi in seek_study.items():
             oc_folders.append(st)
@@ -873,7 +925,9 @@ def get_seek_investigations(username, password, storage):
 
 def get_seek_studies(username, password, storage, investigation):
     """Get all SEEK studies based on an investigation.
-
+    
+    FIXME: Try to do this using SPARQL to make this faster.
+    
     Arguments:
         username: The SEEK username.
         password: The SEEK password.
@@ -995,7 +1049,9 @@ def modify(request):
                 ], shell=True)
         else:
             err = "Please check accept to delete study or investigation"
-            return render(request, "modify.html", context={'error': err})
+            return render(request, "modify.html", context={
+                'error': err,
+                'storagetype': request.session.get('storage_type')})
         return HttpResponseRedirect(reverse('index'))
     else:
         return HttpResponseRedirect(reverse('index'))
@@ -1127,10 +1183,12 @@ def triples(request):
                     'study': study, 'edam': edam,
                     'disgenet': disgenet})
             return render(request, 'triples.html', context={
+                'storagetype': request.session.get('storage_type'),
                 'folders': folders, 'files': files,
                 'studies': studies, 'inv': inv,
                 'sstudy': study})
         return render(request, 'triples.html', context={
+            'storagetype': request.session.get('storage_type'),
             'folders': folders, 'studies': studies,
             'investigation': inv})
 
@@ -1696,6 +1754,7 @@ def make_data_files(gi, files, username, password, galaxyemail, galaxypass,
     if "bioinf-galaxian" in ftp:
         ftp = "ftp://bioinf-galaxian.erasmusmc.nl:23"
     for file in files:
+        print(file)
         if storagetype == "SEEK":
             get_file_info = ("curl -X GET \"" + file +
                              "\" -H \"accept: application/json\"")
@@ -2069,6 +2128,7 @@ def upload(request):
                                  resultid, groups, investigations)
                 call(["rm", request.session.get('username') + "/input_test"])
             return render_to_response('results.html', context={
+                'storagetype': request.session.get('storage_type'),
                 'workflowid': workflowid,
                 'inputs': inputs, 'pid': pid,
                 'server': request.session.get(
@@ -3014,7 +3074,6 @@ def store_history(request):
         gi = GalaxyInstance(url=server,
                             email=request.session.get("galaxyemail"),
                             password=request.session.get("galaxypass"))
-        home = str(Path.home()) + "/"
         username = request.POST.get('username')
         password = request.POST.get('password')
         storage = request.POST.get('storage')
@@ -3038,16 +3097,16 @@ def store_history(request):
                     historyid,
                     include_deleted=False,
                     include_hidden=True)
-                call(["touch", home + username + "/" + historyid + ".tar"])
-                f = open(home + username + "/" + historyid + ".tar", 'rb+')
+                call(["touch", username + "/" + historyid + ".tar"])
+                f = open(username + "/" + historyid + ".tar", 'rb+')
                 gi.histories.download_history(
                     historyid,
                     export,
                     f)
-                shaname = sha1sum(f.name) + "_" + f.name.split('/')[-1]
-                os.rename(f.name, home + username + "/" +
-                          date + "_" + shaname)
-                url.append(date + "_" + shaname)
+                # shaname = sha1sum(f.name) + "_" + f.name.split('/')[-1]
+                # os.rename(f.name, username + "/" +
+                #           date + "_" + shaname)
+                url.append(f.name)
                 state = hist['state_ids']
                 dump = json.dumps(state)
                 status = json.loads(dump)
@@ -3110,7 +3169,7 @@ def store_history(request):
                             str(historyid)
                         ], shell=True, stdout=subprocess.PIPE)
                     call(["rm", username + "/" + new_name])
-                call(["rm", home + username + "/" + shaname])
+                call(["rm", username + "/" + f.name])
                 return HttpResponseRedirect(reverse('index'))
 
 

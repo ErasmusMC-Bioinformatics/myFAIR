@@ -46,9 +46,12 @@
         <div id="menu">
             <ul id="menubar">
                 <li><a href="{% url 'index' %}" target="_self"><img src="{% static 'img/logo-erasmus.png' %}" alt="" class="img-thumbnail" width="81.5 height="31.8"></a></li>
-                <li><span class="menu-text" style="margin-left:10px"><a href="{% url 'triples' %}">Index your data</a></span></li>
-                <li><span class="menu-text" style="margin-left:10px"><a href="{% url 'seek' %}">Upload files to SEEK</a></span></li>
-                <li><span class="menu-text"><a href="{% url 'delete' %}">Delete indexed data</a></span></li>
+                {% if storagetype == "SEEK" %}
+                    <li><span class="menu-text" style="margin-left:10px"><a href="{% url 'seek' %}">Upload files to SEEK</a></span></li>
+                {% else %}
+                    <li><span class="menu-text" style="margin-left:10px"><a href="{% url 'triples' %}">Index your data</a></span></li>
+                    <li><span class="menu-text"><a href="{% url 'delete' %}">Delete indexed data</a></span></li>
+                {% endif %}
                 <li><span class="menu-text"><a href="{% url 'logout' %}">Logout</a></span></li>
             </ul>
         </div>
@@ -74,7 +77,7 @@
                 <td>
                     <b><i>Select a project</i></b>
                     <br>
-                    <input type="hidden" id="proj" name="proj" value="{{proj|add:","|add:proj_name}}">
+                    <input type="hidden" id="proj-stored" name="proj-stored" value="{{proj|add:","|add:proj_name}}">
                     <select id="projects" name="projects" class="select-folder" onchange="seekCreate()">
                         <optgroup label="available projects:">
                             <option id="proj" disabled selected value="{{ proj }}">{{ proj_name }}</option>
@@ -90,7 +93,7 @@
                 <td>
                     <b><i>Select an investigation: </i></b>
                     <br>
-                    <input type="hidden" id="inv" name="inv" value="{{inv|add:","|add:inv_name}}">
+                    <input type="hidden" id="inv-stored" name="inv-stored" value="{{inv|add:","|add:inv_name}}">
                     <select id="investigations" name="investigations" class="select-folder" onchange="seekCreate()">
                         <optgroup label="available investiagtions:">
                             <option id="inv" disabled selected value="{{ inv }}">{{ inv_name }}</option>
@@ -107,7 +110,7 @@
                 <td>
                     <b><i>Select a study: </i></b>
                     <br>
-                    <input type="hidden" id="stu" name="stu" value="{{stu|add:","|add:stu_name}}">
+                    <input type="hidden" id="stu-stored" name="stu-stored" value="{{stu|add:","|add:stu_name}}">
                     <select id="studies" name="studies" class="select-folder" onchange="seekCreate()">
                         <option id="stu" disabled selected value="{{ stu }}">{{ stu_name }}</option>
                         <optgroup label="available studies:">
@@ -124,7 +127,7 @@
                     {% endif %}
                 </td>
             </tr>
-            {% if not stu and cns == "yes" %}
+            {% if not stu_name and cns == "yes" %}
             <tr>
                 <td>&nbsp;</td>
             </tr>
@@ -160,7 +163,7 @@
                 <td>
                     <b><i>Select an assay</i></b>
                     <br>
-                    <input type="hidden" id="as" name="as" value="{{as|add:","|add:as_name}}">
+                    <input type="hidden" id="as-stored" name="as-stored" value="{{as|add:","|add:as_name}}">
                     <select id="assays" name="assays" class="select-folder" onchange="seekCreate()">
                         <optgroup label="available assays:">
                             <option id="as" disabled selected value="{{ as }}">{{ as_name }}</option>
@@ -169,7 +172,7 @@
                             {% endfor %}
                         </optgroup>
                     </select>
-                    {% if cna == "yes" or as %}
+                    {% if cna == "yes" or as_name %}
                         &nbsp;
                     {% else %}
                         <input type="checkbox" id="cna" name="cna" onclick="seekCreate()" value="yes">
@@ -178,7 +181,7 @@
                 </td>
             </tr>
             {% endif %}
-            {% if stu and not assays or cna == "yes" %}
+            {% if stu_name and not assays or cna == "yes" %}
             <tr>
                 <td>&nbsp;</td>
             </tr>
@@ -353,7 +356,7 @@
                 </td>
             </tr>
             {% endif %}
-            {% if as and assays %}
+            {% if as_name %}
             <tr>
                 <td><b><i>TAG DisGeNET</i></b></td>
             </tr>
