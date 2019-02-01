@@ -491,7 +491,7 @@ def seek_sparql_investigations(selected_project_name):
     )
     for row in g.query(i_sparql_query):
         inv_names[row[0].strip("rdflib.term.URIRef").split(
-            "/")[-1]] = row[1].strip("rdflib.term.URIRef")
+            "/")[-1]] = row[1]
     return inv_names
 
 
@@ -520,7 +520,7 @@ def seek_sparql_studies(selected_investigation_name):
     )
     for row in g.query(s_sparql_query):
         study_names[row[0].strip("rdflib.term.URIRef").split(
-            "/")[-1]] = row[1].strip("rdflib.term.URIRef")
+            "/")[-1]] = row[1]
     return study_names
 
 
@@ -549,9 +549,27 @@ def seek_sparql_assays(selected_study_name):
     )
     for row in g.query(s_sparql_query):
         assay_names[row[0].strip("rdflib.term.URIRef").split(
-            "/")[-1]] = row[1].strip("rdflib.term.URIRef")
+            "/")[-1]] = row[1]
     return assay_names
 
+
+def seek_sparql_samples(selected_assay_name):
+    sample_names = {}
+    g = open_sparql_store()
+    s_sparql_query = (
+        "prefix jerm: <http://jermontology.org/ontology/JERMOntology#>" +
+        "select distinct ?sampleid ?sample where {" +
+        "?a jerm:title ?assay ." +
+        "FILTER regex(?assay, \'" + selected_assay_name + "\', 'i')" +
+        "?a jerm:hasPart ?sampleid." +
+        "FILTER regex(?sampleid, 'samples', 'i')" +
+        "?sampleid jerm:title ?sample" +
+        "}"
+    )
+    for row in g.query(s_sparql_query):
+        sample_names[row[0].strip("rdflib.term.URIRef").split(
+            "/")[-1]] = row[1]
+    return sample_names
 
 
 @csrf_exempt
@@ -662,6 +680,10 @@ def seek(request):
                 selected_assay_name = request.POST.get("as-stored").split(',')[1]
             cns = request.POST.get('cns')
             cna = request.POST.get('cna')
+            if selected_assay_id != "":
+                sample_names = seek_sparql_samples(selected_assay_name)
+            else:
+                sample_names = {}
             if (
                 request.POST.get('newstudy')
             ):
@@ -733,6 +755,7 @@ def seek(request):
         inv_names = {}
         study_names = {}
         assay_names = {}
+        sample_names = {}
     return render(
         request,
         "seek.html",
@@ -740,6 +763,7 @@ def seek(request):
                  'investigations': inv_names,
                  'studies': study_names,
                  'assays': assay_names,
+                 'samples': sample_names,
                  'userids': user_dict,
                  'proj': selected_project_id,
                  'proj_name': selected_project_name,
@@ -3662,8 +3686,7 @@ def disgenet(disgenet):
         "} " +
         "} LIMIT 30"
     )
-    g = rdflib.ConjunctiveGraph('SPARQLStore')
-    g.open("http://127.0.0.1:8890/sparql/")
+    g = open_sparql_store()
     for row in g.query(sparql_query):
         disgenet_uri[row[0].strip("rdflib.term.URIRef")] = row[1]
     return disgenet_uri

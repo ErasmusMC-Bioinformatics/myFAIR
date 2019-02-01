@@ -224,6 +224,7 @@ function sparqlQuery() {
                 "FILTER regex(?study, '" + SSEARCH + "', 'i') . " +
                 "FILTER regex(?assay, '" + ASEARCH + "', 'i') . " +
                 "FILTER (!regex(?assay, '__result__', 'i')) . " +
+                "FILTER (!regex(?fileurl, 'samples', 'i')) . " +
                 "}";
         } else {
             var query = 

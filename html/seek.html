@@ -358,6 +358,21 @@
             {% endif %}
             {% if as_name %}
             <tr>
+                <td>SAMPLES AVAILABLE IN THIS ASSAY:<br>
+                    {% if samples %}
+                    <ul>
+                        {% for sid, sname in samples.items %}
+                            <li>{{ sname }}</li>
+                        {% endfor %}
+                    </ul>
+                    {% else %}
+                    <p style="color:rgb(250, 75, 0)">
+                        <b><i>No samples linked to this assay</i></b><br>
+                    </p>
+                    {% endif %}
+                </td>
+            </tr>
+            <tr>
                 <td><b><i>TAG DisGeNET</i></b></td>
             </tr>
             <tr>
