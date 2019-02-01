@@ -504,7 +504,7 @@ def seek_sparql_studies(selected_investigation_name):
         in the upload form.
 
     Returns:
-        Dicionary with all studies belonging to the selected investigation.
+        Dictionary with all studies belonging to the selected investigation.
     """
     study_names = {}
     g = open_sparql_store()
@@ -533,7 +533,7 @@ def seek_sparql_assays(selected_study_name):
         in the upload form.
     
     Returns:
-        Dicionary with all assays belonging to the selected study.
+        Dictionary with all assays belonging to the selected study.
     """
     assay_names = {}
     g = open_sparql_store()
@@ -544,6 +544,7 @@ def seek_sparql_assays(selected_study_name):
         "FILTER regex(?study, \'" + selected_study_name + "\', 'i')" +
         "?s jerm:hasPart ?assayid." +
         "FILTER regex(?assayid, 'assays', 'i')" +
+        "FILTER (!regex(?assay, '__result__', 'i'))" +
         "?assayid jerm:title ?assay" +
         "}"
     )
@@ -554,6 +555,16 @@ def seek_sparql_assays(selected_study_name):
 
 
 def seek_sparql_samples(selected_assay_name):
+    """Run SPARQL query to find all samples on the SEEK server 
+    that are linked to an assay.
+    
+    Arguments:
+        selected_assay_name: The name of the selected assay 
+        in the upload form.
+
+    Returns:
+        Dictionary with all samples linked to the selected assay.
+    """
     sample_names = {}
     g = open_sparql_store()
     s_sparql_query = (
@@ -949,8 +960,6 @@ def get_seek_investigations(username, password, storage):
 
 def get_seek_studies(username, password, storage, investigation):
     """Get all SEEK studies based on an investigation.
-    
-    FIXME: Try to do this using SPARQL to make this faster.
     
     Arguments:
         username: The SEEK username.
