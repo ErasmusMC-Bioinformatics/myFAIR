@@ -20,9 +20,12 @@ function getStudies(){
         <div id="menu">
             <ul id="menubar">
                 <li><a href="{% url 'index' %}" target="_self"><img src="{% static 'img/logo-erasmus.png' %}" alt="" class="img-thumbnail" width="81.5 height="31.8"></a></li>
-                <li><span class="menu-text" style="margin-left:10px"><a href="{% url 'triples' %}">Index your data</a></span></li>
-                <li><span class="menu-text" style="margin-left:10px"><a href="{% url 'seek' %}">Upload files to SEEK</a></span></li>
-                <li><span class="menu-text"><a href="{% url 'delete' %}">Delete indexed data</a></span></li>
+                {% if storagetype == "SEEK" %}
+                    <li><span class="menu-text" style="margin-left:10px"><a href="{% url 'seek' %}">Upload files to SEEK</a></span></li>
+                {% else %}
+                    <li><span class="menu-text" style="margin-left:10px"><a href="{% url 'triples' %}">Index your data</a></span></li>
+                    <li><span class="menu-text"><a href="{% url 'delete' %}">Delete indexed data</a></span></li>
+                {% endif %}
                 <li><span class="menu-text"><a href="{% url 'logout' %}">Logout</a></span></li>
             </ul>
         </div>
@@ -60,17 +63,17 @@ function getStudies(){
                 </div>
                 <div class="panel-body">
                     <fieldset>
-                        {% if "seek" in storage or "127.0.0.1" in storage %}
+                        {% if storagetype == "SEEK" %}
                             <b>Investigation</b>
                         {% endif %}
                         <input type="text" class="form-control" name="isearch" id="isearch" list="isearchDataList" placeholder="Enter investigation name">
                         <datalist id="isearchDataList"></datalist>
-                        {% if "seek" in storage or "127.0.0.1" in storage %}
+                        {% if storagetype == "SEEK" %}
                             <br>
                             <b>Study</b>
                         {% endif %}
                         <input style="display: none" type="text" class="form-control" name="ssearch" id="ssearch" list="ssearchDataList" placeholder="Enter study name">
-                        {% if "seek" in storage or "127.0.0.1" in storage %}
+                        {% if storagetype == "SEEK" %}
                             <br>
                             <b>Assay</b>
                         {% endif %}
@@ -121,9 +124,11 @@ function getStudies(){
                         </select>
                         <br />
                         <br />
+                        {% if storagetype != "SEEK" %}
                         <input type="checkbox" value="true" name="sendmeta" id="sendmeta" /><label for="sendmeta">Send metadata file?</label>
-                        <br />
-                        <input type="checkbox" value="true" name="col" id="col" /><label for="col">Make collection</label>
+                        {% endif %}
+                        <!-- <br />
+                        <input type="checkbox" value="true" name="col" id="col" /><label for="col">Make collection</label> -->
                     </div>
                     <br />
                     <br />
