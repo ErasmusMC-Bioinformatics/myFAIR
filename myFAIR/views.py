@@ -603,14 +603,11 @@ def seek(request):
     selected_study_name = ""
     selected_assay_id = ""
     selected_assay_name = ""
-    searches = {}
     cns = ""
     cna = ""
-    err = ""
     eids = {}
     dids = []
     fullname = ""
-    user_dict = {}
     tags = []
     edamterm = ""
     if request.POST.get('stored_disgenet') is not None:
@@ -775,7 +772,6 @@ def seek(request):
                  'studies': study_names,
                  'assays': assay_names,
                  'samples': sample_names,
-                 'userids': user_dict,
                  'proj': selected_project_id,
                  'proj_name': selected_project_name,
                  'inv': selected_investigation_id,
@@ -786,7 +782,6 @@ def seek(request):
                  'as_name': selected_assay_name,
                  'cns': cns,
                  'cna': cna,
-                 'searches': searches,
                  'fullname': fullname,
                  'disgenet': dids,
                  'disgenettags': selected_disgenet_tags,
@@ -794,8 +789,8 @@ def seek(request):
                  'storededam': stored_edam,
                  'edamterm': edamterm,
                  'edam': eids,
-                 'err': err,
-                 'storagetype': request.session.get('storage_type')})
+                 'storagetype': request.session.get('storage_type'),
+                 'storage': request.session.get('storage')})
 
 
 def get_investigation_folders(storage, storagetype, username, password):
@@ -1787,7 +1782,6 @@ def make_data_files(gi, files, username, password, galaxyemail, galaxypass,
     if "bioinf-galaxian" in ftp:
         ftp = "ftp://bioinf-galaxian.erasmusmc.nl:23"
     for file in files:
-        print(file)
         if storagetype == "SEEK":
             get_file_info = ("curl -X GET \"" + file +
                              "\" -H \"accept: application/json\"")
