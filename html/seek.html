@@ -58,9 +58,6 @@
     </div>
 </div>
 <div class="container" style="margin-top:100px;">
-    {% if err %}
-        {{err}}
-    {% endif %}
     <form action="{% url 'seek' %}" method="POST" name="seek-data-upload" enctype=multipart/form-data >
         <table id="tbl-files" width="100%" style="margin-bottom:150px;">
             <thead>
@@ -68,8 +65,15 @@
             </thead>
             <tr>
                 <td>
-                    <b><i>Enter you first name and last name: </i></b>
-                    <br>
+                    {% if investigations %}
+                        <p style="color:rgb(0, 0, 0)">
+                            <b><i>Name is validated!</i></b>
+                        </p>
+                    {% else %}
+                        <p style="color:rgb(250, 75, 0)">
+                            <b><i>Pleaee enter you first name and last name: </i></b>
+                        </p>
+                    {% endif %}
                     <input type="text" id="user" name="user" value="{{fullname}}">
                 </td>
             </tr>
@@ -362,7 +366,10 @@
                     {% if samples %}
                     <ul>
                         {% for sid, sname in samples.items %}
-                            <li>{{ sname }}</li>
+                            <a href="{{storage}}/samples/{{sid}}" target="_blank">
+                                {{sname}}
+                            </a>
+                            <br>
                         {% endfor %}
                     </ul>
                     {% else %}
