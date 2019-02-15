@@ -9,3 +9,7 @@ RUN conda install -c conda-forge lftp libmagic
 
 RUN mv myFAIR/docker_settings.py myFAIR/settings.py
 RUN chmod 777 /code/start.sh
+
+EXPOSE :8000
+
+CMD ["/code/start.sh"]
