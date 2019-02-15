@@ -1,3 +1,5 @@
 .vscode/settings.json
 myFAIR/__pycache__/*.pyc
 .vscode/launch.json
+
+db\.sqlite3
