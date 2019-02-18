@@ -1,0 +1,35 @@
+install_tool_dependencies: True
+install_repository_dependencies: True
+install_resolver_dependencies: True
+
+tools:
+- name: gemini_load
+  owner: iuc
+  revision:
+  - b2c25142267e
+  tool_panel_section_label: Gemini
+  tool_shed_url: https://toolshed.g2.bx.psu.edu
+- name: gemini_recessive_and_dominant
+  owner: iuc
+  revision:
+  - 05124dc72dba
+  tool_panel_section_label: Gemini
+  tool_shed_url: https://toolshed.g2.bx.psu.edu
+- name: gemini_de_novo
+  owner: iuc
+  revision:
+  - 9db3e299b1c8
+  tool_panel_section_label: Gemini
+  tool_shed_url: https://toolshed.g2.bx.psu.edu
+- name: gemini_comp_hets
+  owner: iuc
+  revision:
+  - 62647e2637f6
+  tool_panel_section_label: Gemini
+  tool_shed_url: https://toolshed.g2.bx.psu.edu
+- name: file_manipulation
+  owner: saskia-hiltemann
+  revision:
+  - e77c9484b2d0
+  tool_panel_section_label: File Manipulation
+  tool_shed_url: https://toolshed.g2.bx.psu.edu
