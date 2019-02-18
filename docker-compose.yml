@@ -1,0 +1,20 @@
+version: '3'
+
+services:
+  seek:
+    image: fairdom/seek:1.8
+    ports:
+    - "8002:3000"
+  galaxy:
+    build:
+      context: .
+      dockerfile: ./galaxy.Dockerfile
+    ports:
+    - "8001:80"
+  myfair:
+    build:
+      context: .
+      dockerfile: ./myFAIR.Dockerfile
+    ports:
+      - "8000:8000"
+    
