@@ -3,7 +3,7 @@ version: '3'
 services:
   virtuoso:
     build:
-      context: .
+      context: ./docker/
       dockerfile: ./virtuoso.Dockerfile
     ports:
     - "8003:8890"
@@ -11,21 +11,21 @@ services:
   seek:
     build:
       context: .
-      dockerfile: ./seek.Dockerfile
+      dockerfile: ./docker/seek.Dockerfile
     ports:
     - "8002:3000"
     depends_on:
     - virtuoso
   galaxy:
     build:
-      context: .
+      context: ./docker/
       dockerfile: ./galaxy.Dockerfile
     ports:
     - "8001:80"
   myfair:
     build:
       context: .
-      dockerfile: ./myFAIR.Dockerfile
+      dockerfile: ./docker/myFAIR.Dockerfile
     ports:
       - "8000:8000"
     depends_on:
