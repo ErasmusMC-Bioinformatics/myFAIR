@@ -1,10 +1,21 @@
 version: '3'
 
 services:
+  virtuoso:
+    build:
+      context: .
+      dockerfile: ./virtuoso.Dockerfile
+    ports:
+    - "8003:8890"
+    command: /virtuoso_start.sh
   seek:
-    image: fairdom/seek:1.8
+    build:
+      context: .
+      dockerfile: ./seek.Dockerfile
     ports:
     - "8002:3000"
+    depends_on:
+    - virtuoso
   galaxy:
     build:
       context: .
@@ -17,4 +28,9 @@ services:
       dockerfile: ./myFAIR.Dockerfile
     ports:
       - "8000:8000"
+    depends_on:
+      - seek
+      - galaxy
+      - virtuoso
+
     
