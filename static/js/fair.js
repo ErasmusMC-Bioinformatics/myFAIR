@@ -6,8 +6,11 @@
 var USER = document.getElementById('user').innerHTML.replace('@', '');
 var SERVER = document.getElementById('storagename').innerHTML
 var STORAGETYPE = document.getElementById('storage-type').innerHTML
+var VIRTUOSO_URL = document.getElementById('virtuoso-url').innerHTML
 if(STORAGETYPE === "SEEK") {
-    if(SERVER.indexOf(":3000") > 0) {
+    if(SERVER == "seek"){ // For the docker
+        var SPARQL_ENDPOINT = VIRTUOSO_URL + '?default-graph-uri=&query='
+    } else if(SERVER.indexOf(":3000") > 0) {
         var SPARQL_ENDPOINT = SERVER.replace(":3000", "") + ':8890/sparql?default-graph-uri=&query='
     } else {
         var SPARQL_ENDPOINT = SERVER.replace(":3000", "") + ':8890/sparql?default-graph-uri=seek:public&query='

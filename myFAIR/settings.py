@@ -134,3 +134,5 @@ STATICFILES_FINDERS = (
 STATIC_ROOT = ''
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 MEDIA_URL = '/media/'
+
+VIRTUOSO_URL = "http://127.0.0.1:8890/sparql/"

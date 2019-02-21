@@ -13,6 +13,8 @@ import random
 import plotly
 import plotly.graph_objs as go
 
+from myFAIR import settings
+
 from subprocess import call
 from subprocess import check_call
 from time import strftime, gmtime
@@ -204,6 +206,7 @@ def index(request):
                      'password': password, 'server': server,
                      'storage': storage,
                      'storagetype': request.session.get('storage_type'),
+                     'virtuoso_url': settings.VIRTUOSO_URL,
                      'investigations': investigations,
                      'studies': folders, 'inv': investigation,
                      'dbkeys': dbkeys,
@@ -442,7 +445,7 @@ def open_sparql_store():
         The SPARQL end-point.
     """
     g = rdflib.ConjunctiveGraph('SPARQLStore')
-    g.open("http://127.0.0.1:8890/sparql/")
+    g.open(settings.VIRTUOSO_URL)
     return g
 
 

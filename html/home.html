@@ -33,6 +33,7 @@ function getStudies(){
 </div>
 <div class="container" style="margin-top:100px">
     <span id="storage-type" hidden>{{ storagetype }}</span>
+    <span id="virtuoso-url" hidden>{{ virtuoso_url }}</span>
     <span class="info" style="float:left">
         Galaxy Server:
         {% if "http://" in server or "https://" in server %}
@@ -44,11 +45,7 @@ function getStudies(){
     </span>
     <span class="info" style="float:right">
         Storage Location:
-        {% if "http://" in storage or "https://" in storage %}
-            <a href="{{storage}}" target="_blank"><span id="storagename">{{storage}}</span></a> <br />
-        {% else %}
-            {{storage}} <br />
-        {% endif %}
+            <span id="storagename">{{storage}}</span><br />
     Storage-User: <span id="user">{{username}}</span> <br />
     </span>
 </div>
