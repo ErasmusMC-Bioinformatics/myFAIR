@@ -26,6 +26,7 @@ The vcf file can be found [here](https://bioinf-galaxian.erasmusmc.nl/galaxy/lib
 * lftp 4.8.1 or higher
 * python-magic 0.4.15 or higher
 * plotly 3.3.0 or higher
+* sparqlwrapper 1.8.2 or higher
 * An account on a local or external Galaxy server with the following tools available:
     1. GEMINI (load, autosomal recessive/dominant, de novo, comp hets)
     2. Add Column, Strip Header and File Concatenate (all can be found under the name file_manipulation in the Galaxy tool shed)
