@@ -29,144 +29,96 @@ $(document).ready(function () {
     $("#results").addClass('hidden');
     $("#errorPanel").addClass('hidden');
     $("#infoPanel").addClass('hidden');
-    if(SPARQL_ENDPOINT.indexOf("seek") >= 0 || SPARQL_ENDPOINT.indexOf("127.0.0.1") >= 0){
-        var investigations = "PREFIX dcterms: <http://purl.org/dc/terms/>" + 
-            "SELECT DISTINCT ?value WHERE {?s dcterms:title ?value . " +
-            "FILTER regex(?s, 'investigations', 'i')}"
-        var studies = "PREFIX dcterms: <http://purl.org/dc/terms/> " +
-            "SELECT DISTINCT ?value WHERE {" +
-            "?s dcterms:title ?value " +
-            "FILTER regex(?s, 'studies', 'i')}"
-        var assays = "PREFIX dcterms: <http://purl.org/dc/terms/> " +
-            "SELECT DISTINCT ?value WHERE {" +
-            "?s dcterms:title ?value " +
-            "FILTER (!regex(?value, '__result__', 'i')) . " +
-            "FILTER regex(?s, 'assays', 'i')}"
-        var iservice = encodeURI(
-            SPARQL_ENDPOINT + investigations + '&format=json').replace(
-                /#/g, '%23').replace('+', '%2B');
-        $.ajax({
-            url: iservice, dataType: 'jsonp', success: function (result) {
-                var iinputOption = document.getElementById('isearch');
-                var idataList = document.getElementById('isearchDataList');
-                $(iinputOption).empty();
-                $(iinputOption).val('');
-                result.results.bindings.forEach(function (v) {
-                    var option = document.createElement('option');
-                    option.setAttribute('width', '70%');
-                    if (v.url !== undefined) {
-                        option.value = v.value.value;
-                        option.setAttribute('data-input-value', v.url.value);
-                    }
-                    else {
-                        option.value = v.value.value;
-                        option.setAttribute('data-input-value', v.value.value);
-                    }
-                    if (idataList !== null) {
-                        idataList.appendChild(option);
-                    }
-                });
-            }
-        });
-        var sservice = encodeURI(
-            SPARQL_ENDPOINT + studies + '&format=json').replace(
-                /#/g, '%23').replace('+', '%2B');
-        $.ajax({
-            url: sservice, dataType: 'jsonp', success: function (result) {
-                var sinputOption = document.getElementById('ssearch');
-                var sdataList = document.getElementById('ssearchDataList');
-                $(sinputOption).empty();
-                $(sinputOption).val('');
-                result.results.bindings.forEach(function (v) {
-                    var option = document.createElement('option');
-                    option.setAttribute('width', '70%');
-                    if (v.url !== undefined) {
-                        option.value = v.value.value;
-                        option.setAttribute('data-input-value', v.url.value);
-                    }
-                    else {
-                        option.value = v.value.value;
-                        option.setAttribute('data-input-value', v.value.value);
-                    }
-                    if (sdataList !== null) {
-                        sdataList.appendChild(option);
-                    }
-                });
-            }
-        });
-        var aservice = encodeURI(
-            SPARQL_ENDPOINT + assays + '&format=json').replace(
-                /#/g, '%23').replace('+', '%2B');
-        $.ajax({
-            url: aservice, dataType: 'jsonp', success: function (result) {
-                var ainputOption = document.getElementById('asearch');
-                var adataList = document.getElementById('asearchDataList');
-                $(ainputOption).empty();
-                $(ainputOption).val('');
-                result.results.bindings.forEach(function (v) {
-                    var option = document.createElement('option');
-                    option.setAttribute('width', '70%');
-                    if (v.url !== undefined) {
-                        option.value = v.value.value;
-                        option.setAttribute('data-input-value', v.url.value);
-                    }
-                    else {
-                        option.value = v.value.value;
-                        option.setAttribute('data-input-value', v.value.value);
-                    }
-                    if (adataList !== null) {
-                        adataList.appendChild(option);
-                    }
-                });
-            }
-        });
-    } else {
-        var sampleid = "SELECT DISTINCT ?value FROM " +
-            "<http://127.0.0.1:3030/ds/data/" + USER + "> WHERE " +
-            "{ ?sample <http://127.0.0.1:3030/ds/data?graph=" + USER +
-            "#sample_id> ?value }" + "ORDER BY(?value)"
-        var studies = "SELECT DISTINCT ?value FROM " +
-            "<http://127.0.0.1:3030/ds/data/" + USER + "> WHERE " +
-            "{ ?s <http://127.0.0.1:3030/ds/data?graph=" + USER +
-            "#group_id> ?value }" + "ORDER BY (?value)"
-        var disease = "SELECT DISTINCT ?value FROM " +
-            "<http://127.0.0.1:3030/ds/data/" + USER + "> WHERE " +
-            "{ ?s <http://127.0.0.1:3030/ds/data?graph=" + USER +
-            "#disease> ?value }" + "ORDER BY (?value)"
-        var investigations = "SELECT DISTINCT ?value FROM " +
-            "<http://127.0.0.1:3030/ds/data/" + USER + "> WHERE " +
-            "{ ?s <http://127.0.0.1:3030/ds/data?graph=" + USER +
-            "#investigation_id> ?value }" + "ORDER BY (?value)"
-        fillList = [studies, investigations, sampleid, disease]
-        for (fl in fillList) {
-            var service = encodeURI(
-                SPARQL_ENDPOINT + fillList[fl] + '&format=json').replace(
-                    /#/g, '%23').replace('+', '%2B');
-            $.ajax({
-                url: service, dataType: 'jsonp', success: function (result) {
-                    var iinputOption = document.getElementById('isearch');
-                    var idataList = document.getElementById('isearchDataList');
-                    $(iinputOption).empty();
-                    $(iinputOption).val('');
-                    result.results.bindings.forEach(function (v) {
-                        var option = document.createElement('option');
-                        option.setAttribute('width', '70%');
-                        if (v.url !== undefined) {
-                            option.value = v.value.value;
-                            option.setAttribute('data-input-value', v.url.value);
-                        }
-                        else {
-                            option.value = v.value.value;
-                            option.setAttribute('data-input-value', v.value.value);
-                        }
-                        if (idataList !== null) {
-                            idataList.appendChild(option);
-                        }
-                    });
+    var investigations = "PREFIX dcterms: <http://purl.org/dc/terms/>" + 
+        "SELECT DISTINCT ?value WHERE {?s dcterms:title ?value . " +
+        "FILTER regex(?s, 'investigations', 'i')}"
+    var studies = "PREFIX dcterms: <http://purl.org/dc/terms/> " +
+        "SELECT DISTINCT ?value WHERE {" +
+        "?s dcterms:title ?value " +
+        "FILTER regex(?s, 'studies', 'i')}"
+    var assays = "PREFIX dcterms: <http://purl.org/dc/terms/> " +
+        "SELECT DISTINCT ?value WHERE {" +
+        "?s dcterms:title ?value " +
+        "FILTER (!regex(?value, '__result__', 'i')) . " +
+        "FILTER regex(?s, 'assays', 'i')}"
+    var iservice = encodeURI(
+        SPARQL_ENDPOINT + investigations + '&format=json').replace(
+            /#/g, '%23').replace('+', '%2B');
+    $.ajax({
+        url: iservice, dataType: 'jsonp', success: function (result) {
+            var iinputOption = document.getElementById('isearch');
+            var idataList = document.getElementById('isearchDataList');
+            $(iinputOption).empty();
+            $(iinputOption).val('');
+            result.results.bindings.forEach(function (v) {
+                var option = document.createElement('option');
+                option.setAttribute('width', '70%');
+                if (v.url !== undefined) {
+                    option.value = v.value.value;
+                    option.setAttribute('data-input-value', v.url.value);
+                }
+                else {
+                    option.value = v.value.value;
+                    option.setAttribute('data-input-value', v.value.value);
+                }
+                if (idataList !== null) {
+                    idataList.appendChild(option);
                 }
             });
         }
-    }
+    });
+    var sservice = encodeURI(
+        SPARQL_ENDPOINT + studies + '&format=json').replace(
+            /#/g, '%23').replace('+', '%2B');
+    $.ajax({
+        url: sservice, dataType: 'jsonp', success: function (result) {
+            var sinputOption = document.getElementById('ssearch');
+            var sdataList = document.getElementById('ssearchDataList');
+            $(sinputOption).empty();
+            $(sinputOption).val('');
+            result.results.bindings.forEach(function (v) {
+                var option = document.createElement('option');
+                option.setAttribute('width', '70%');
+                if (v.url !== undefined) {
+                    option.value = v.value.value;
+                    option.setAttribute('data-input-value', v.url.value);
+                }
+                else {
+                    option.value = v.value.value;
+                    option.setAttribute('data-input-value', v.value.value);
+                }
+                if (sdataList !== null) {
+                    sdataList.appendChild(option);
+                }
+            });
+        }
+    });
+    var aservice = encodeURI(
+        SPARQL_ENDPOINT + assays + '&format=json').replace(
+            /#/g, '%23').replace('+', '%2B');
+    $.ajax({
+        url: aservice, dataType: 'jsonp', success: function (result) {
+            var ainputOption = document.getElementById('asearch');
+            var adataList = document.getElementById('asearchDataList');
+            $(ainputOption).empty();
+            $(ainputOption).val('');
+            result.results.bindings.forEach(function (v) {
+                var option = document.createElement('option');
+                option.setAttribute('width', '70%');
+                if (v.url !== undefined) {
+                    option.value = v.value.value;
+                    option.setAttribute('data-input-value', v.url.value);
+                }
+                else {
+                    option.value = v.value.value;
+                    option.setAttribute('data-input-value', v.value.value);
+                }
+                if (adataList !== null) {
+                    adataList.appendChild(option);
+                }
+            });
+        }
+    });
     resultList = [studies]
     for (rl in resultList) {
         var service = encodeURI(

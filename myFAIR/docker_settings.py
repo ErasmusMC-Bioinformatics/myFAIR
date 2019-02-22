@@ -135,4 +135,5 @@ STATIC_ROOT = ''
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 MEDIA_URL = '/media/'
 
-VIRTUOSO_URL = "http://virtuoso:8890/sparql/"
+VIRTUOSO_URL = "http://virtuoso:8890/sparql"
+VIRTUOSO_JS_URL = "http://localhost:8890/sparql"

@@ -206,7 +206,7 @@ def index(request):
                      'password': password, 'server': server,
                      'storage': storage,
                      'storagetype': request.session.get('storage_type'),
-                     'virtuoso_url': settings.VIRTUOSO_URL,
+                     'virtuoso_url': settings.VIRTUOSO_JS_URL,
                      'investigations': investigations,
                      'studies': folders, 'inv': investigation,
                      'dbkeys': dbkeys,

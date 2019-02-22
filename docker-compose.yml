@@ -6,7 +6,7 @@ services:
       context: ./docker/
       dockerfile: ./virtuoso.Dockerfile
     ports:
-    - "8003:8890"
+    - "8890:8890"
     command: /virtuoso_start.sh
   seek:
     build:
@@ -32,5 +32,3 @@ services:
       - seek
       - galaxy
       - virtuoso
-
-    
