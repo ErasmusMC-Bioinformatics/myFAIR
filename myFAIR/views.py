@@ -12,6 +12,7 @@ import magic
 import random
 import plotly
 import plotly.graph_objs as go
+from urllib.parse import urlparse
 
 from myFAIR import settings
 
@@ -134,7 +135,7 @@ def index(request):
         investigations = []
         username = request.session.get('username')
         password = request.session.get('password')
-        storage = request.session.get('storage')
+        storage = settings.SEEK_URL
         server = request.session.get('server')
         if request.session.get("storage_type") != "SEEK":
             if investigation is not None and investigation != "":
@@ -204,7 +205,7 @@ def index(request):
             context={'workflows': workflows, 'histories': his,
                      'user': gusername, 'username': username,
                      'password': password, 'server': server,
-                     'storage': storage,
+                     'storage': settings.SEEK_JS_URL,
                      'storagetype': request.session.get('storage_type'),
                      'virtuoso_url': settings.VIRTUOSO_JS_URL,
                      'investigations': investigations,
@@ -1785,6 +1786,7 @@ def make_data_files(gi, files, username, password, galaxyemail, galaxypass,
     if "bioinf-galaxian" in ftp:
         ftp = "ftp://bioinf-galaxian.erasmusmc.nl:23"
     for file in files:
+        file = file.replace(settings.SEEK_JS_URL, settings.SEEK_URL)
         if storagetype == "SEEK":
             get_file_info = ("curl -X GET \"" + file +
                              "\" -H \"accept: application/json\"")
@@ -1795,6 +1797,10 @@ def make_data_files(gi, files, username, password, galaxyemail, galaxypass,
                 file_url = json_file_info["data"]["attributes"]["versions"][v]["url"]
                 filename = json_file_info["data"]["attributes"]["content_blobs"][0]["original_filename"]
             file_url = file_url.replace('?', '/download?')
+
+            #might be too hacky, but the url returned in the seek json points to localhost and the wrong port
+            file_url_components = urlparse(file_url)
+            file_url = "{0}://{1}{2}?{3}".format(file_url_components.scheme, settings.SEEK_URL, file_url_components.path, file_url_components.query)
             call(["curl -L " + file_url + " -o " +
                   username + "/input_" + filename], shell=True)
         else:

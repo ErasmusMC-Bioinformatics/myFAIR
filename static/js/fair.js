@@ -8,7 +8,7 @@ var SERVER = document.getElementById('storagename').innerHTML
 var STORAGETYPE = document.getElementById('storage-type').innerHTML
 var VIRTUOSO_URL = document.getElementById('virtuoso-url').innerHTML
 if(STORAGETYPE === "SEEK") {
-    if(SERVER == "seek:3000"){ // For the docker
+    if(SERVER == "localhost:8002"){ // For the docker
         var SPARQL_ENDPOINT = VIRTUOSO_URL + '?default-graph-uri=&query='
     } else if(SERVER.indexOf(":3000") > 0) {
         var SPARQL_ENDPOINT = SERVER.replace(":3000", "") + ':8890/sparql?default-graph-uri=&query='
