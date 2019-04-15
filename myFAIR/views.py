@@ -10,12 +10,9 @@ import uuid
 import tempfile
 import magic
 import random
-import plotly
-import plotly.graph_objs as go
+
 from urllib.parse import urlparse
-
 from myFAIR import settings
-
 from subprocess import call
 from subprocess import check_call
 from time import strftime, gmtime
@@ -2702,102 +2699,6 @@ def show_results(request):
                                    ["attributes"]["description"])
                     else:
                         out[rid] = rname
-                    myplots = {}
-                    for outputid, outputname in out.items():
-                        if ".ga" not in outputname:
-                            format = "tabular"
-                            if format == "tabular":
-                                call(
-                                    [
-                                        "wget -O " + username + "/\"" + outputname + "\" " +
-                                        storage + "/data_files/" + outputid +
-                                        "/download?version=1"
-                                    ], shell=True
-                                )
-                                filename = username + "/" + outputname
-                                values = []
-                                pielabels = []
-                                with open(filename) as data_file_test:
-                                    headers = data_file_test.readline().split('\t')
-                                    if len(headers) > 1:
-                                        for line in data_file_test:
-                                            line = line.strip('\n')
-                                            values.append(line.split('\t'))
-                                            pielabels.append(
-                                                line.split('\t')[-1])
-                                        uniquepielabels = list(set(pielabels))
-                                        sortedvalues = sorted(pielabels)
-                                        pievalues = [
-                                            len(list(group)) for key, group in groupby(sortedvalues)]
-                                        # colors = ['#21317f', '#e7f3ff']
-                                        colors = []
-
-                                        def r(): return random.randint(200, 255)
-                                        for dummyx in range(len(uniquepielabels)):
-                                            colors.append(
-                                                ('#%02X%02X%02X' % (r(), r(), r())))
-                                        pietrace = go.Pie(
-                                            labels=uniquepielabels,
-                                            values=pievalues,
-                                            hoverinfo='label+percent',
-                                            textinfo='value',
-                                            textfont=dict(size=20),
-                                            marker=dict(colors=colors,
-                                                        line=dict(color='#000000', width=2)))
-                                        trace = go.Table(
-                                            columnorder=list(
-                                                range(len(headers))),
-                                            header=dict(
-                                                values=headers,
-                                                fill=dict(color='#21317f'),
-                                                align=['center'] * 5,
-                                                font=dict(color='white', size=14)),
-                                            cells=dict(
-                                                values=list(
-                                                    map(list, zip(*values))),
-                                                fill=dict(color='#e7f3ff'),
-                                                align=['center'] * 5,
-                                                font=dict(color='#21317f', size=14)))
-                                        cmd = ['xrandr']
-                                        cmd2 = ['grep', '*']
-                                        p = subprocess.Popen(
-                                            cmd, stdout=subprocess.PIPE)
-                                        p2 = subprocess.Popen(
-                                            cmd2, stdin=p.stdout, stdout=subprocess.PIPE)
-                                        p.stdout.close()
-                                        try:
-                                            resolution_string, dummyjunk = p2.communicate()
-                                            resolution = resolution_string.split()[
-                                                0].decode()
-                                            width, dummyheight = resolution.split(
-                                                'x')
-                                        except IndexError:
-                                            width, dummyheight = [1920, 1080]
-                                        layout = dict(
-                                            width=int(width)-500,
-                                            height=500,
-                                            paper_bgcolor='rgba(0,0,0,0)',
-                                            plot_bgcolor='rgba(0,0,0,0)'
-                                        )
-                                        data = [trace]
-                                        piedata = [pietrace]
-                                        fig = go.Figure(
-                                            data=data, layout=layout)
-                                        piefig = go.Figure(
-                                            data=piedata, layout=layout)
-                                        config = {
-                                            "showLink": False,
-                                            "displaylogo": False,
-                                            'modeBarButtonsToRemove': ['pan2d', 'lasso2d']
-                                        }
-                                        # fig = dict(data=data, layout=layout)
-                                        myplots[outputname] = (plotly.offline.plot(
-                                            fig, output_type='div', config=config))
-                                        myplots["pie_" + outputname] = (plotly.offline.plot(
-                                            piefig, output_type='div', config=config))
-                                # call(["rm " + username + "/" + outputname], shell=True)
-                                call(["rm " + username + "/\"" +
-                                      outputname + "\""], shell=True)
                 return render(request, 'results.html', context={
                     'storagetype': request.session.get('storage_type'),
                     'inputs': inputs,
@@ -2805,8 +2706,7 @@ def show_results(request):
                     'workflow': workflow,
                     'storage': storage,
                     'resultid': resultid,
-                    'workflowid': wid,
-                    'plots': myplots})
+                    'workflowid': wid})
             else:
                 result = get_results(group, resultid, investigations,
                                      username, password, storage)
