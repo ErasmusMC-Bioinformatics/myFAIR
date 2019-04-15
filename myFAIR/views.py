@@ -46,14 +46,15 @@ def login(request):
             server = request.POST.get('server')
         else:
             server = request.POST.get('server') + '/'
-        if request.POST.get('storage')[-1] == '/':
-            storage = request.POST.get('storage')[:-1]
-        else:
-            storage = request.POST.get('storage')
+        # if request.POST.get('storage')[-1] == '/':
+        #     storage = request.POST.get('storage')[:-1]
+        # else:
+        #     storage = request.POST.get('storage')
         username = request.POST.get('username')
         password = request.POST.get('password')
         galaxypass = request.POST.get("galaxypass")
         galaxyemail = request.POST.get("galaxyemail")
+        storage = settings.SEEK_URL
         storagetype = request.POST.get("storagetype")
         noexpire = request.POST.get('no-expire')
         if storage != "":
@@ -136,6 +137,7 @@ def index(request):
         username = request.session.get('username')
         password = request.session.get('password')
         storage = settings.SEEK_URL
+        virtuoso = settings.VIRTUOSO_JS_URL
         server = request.session.get('server')
         if request.session.get("storage_type") != "SEEK":
             if investigation is not None and investigation != "":
@@ -205,9 +207,9 @@ def index(request):
             context={'workflows': workflows, 'histories': his,
                      'user': gusername, 'username': username,
                      'password': password, 'server': server,
-                     'storage': settings.SEEK_JS_URL,
+                     'storage': storage,
                      'storagetype': request.session.get('storage_type'),
-                     'virtuoso_url': settings.VIRTUOSO_JS_URL,
+                     'virtuoso_url': virtuoso,
                      'investigations': investigations,
                      'studies': folders, 'inv': investigation,
                      'dbkeys': dbkeys,
@@ -1786,7 +1788,6 @@ def make_data_files(gi, files, username, password, galaxyemail, galaxypass,
     if "bioinf-galaxian" in ftp:
         ftp = "ftp://bioinf-galaxian.erasmusmc.nl:23"
     for file in files:
-        file = file.replace(settings.SEEK_JS_URL, settings.SEEK_URL)
         if storagetype == "SEEK":
             get_file_info = ("curl -X GET \"" + file +
                              "\" -H \"accept: application/json\"")
@@ -1797,10 +1798,6 @@ def make_data_files(gi, files, username, password, galaxyemail, galaxypass,
                 file_url = json_file_info["data"]["attributes"]["versions"][v]["url"]
                 filename = json_file_info["data"]["attributes"]["content_blobs"][0]["original_filename"]
             file_url = file_url.replace('?', '/download?')
-
-            #might be too hacky, but the url returned in the seek json points to localhost and the wrong port
-            file_url_components = urlparse(file_url)
-            file_url = "{0}://{1}{2}?{3}".format(file_url_components.scheme, settings.SEEK_URL, file_url_components.path, file_url_components.query)
             call(["curl -L " + file_url + " -o " +
                   username + "/input_" + filename], shell=True)
         else:
@@ -2069,8 +2066,8 @@ def upload(request):
     workflowid = request.POST.get('workflowid')
     pid = request.POST.get('data_id')
     sendmeta = request.POST.get('sendmeta')
-    # makecol = request.POST.get('col')
-    # data_ids = []
+    makecol = request.POST.get('col')
+    data_ids = []
     control = request.POST.get('samples')
     test = request.POST.get('samplesb')
     new_hist = request.POST.get('historyname')
@@ -2133,9 +2130,9 @@ def upload(request):
                     if k in dname:
                         datamap[v] = {'src': "hda", 'id': did}
                 in_count += 1
-            # if makecol == "true":
-            #     gi.histories.create_dataset_collection(
-            #         history_id, make_collection(data_ids))
+            if makecol == "true":
+                gi.histories.create_dataset_collection(
+                    history_id, make_collection(data_ids))
             gi.workflows.run_workflow(
                 workflowid, datamap, history_id=history_id)
             gi.workflows.export_workflow_to_local_path(
@@ -2171,13 +2168,13 @@ def upload(request):
                     'server'
                 )})
         else:
-            # if makecol == "true":
-            #     history_data = gi.histories.show_history(
-            #         history_id, contents=True)
-            #     for c in range(0, len(history_data)):
-            #         data_ids.append(history_data[c]['id'])
-            #     gi.histories.create_dataset_collection(
-            #         history_id, make_collection(data_ids))
+            if makecol == "true":
+                history_data = gi.histories.show_history(
+                    history_id, contents=True)
+                for c in range(0, len(history_data)):
+                    data_ids.append(history_data[c]['id'])
+                gi.histories.create_dataset_collection(
+                    history_id, make_collection(data_ids))
             ug_store_results(
                 gi,
                 request.session.get('galaxyemail'),

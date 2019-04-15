@@ -7,14 +7,8 @@ var USER = document.getElementById('user').innerHTML.replace('@', '');
 var SERVER = document.getElementById('storagename').innerHTML
 var STORAGETYPE = document.getElementById('storage-type').innerHTML
 var VIRTUOSO_URL = document.getElementById('virtuoso-url').innerHTML
+var SPARQL_ENDPOINT = VIRTUOSO_URL + '?default-graph-uri=&query='
 if(STORAGETYPE === "SEEK") {
-    if(SERVER == "localhost:8002"){ // For the docker
-        var SPARQL_ENDPOINT = VIRTUOSO_URL + '?default-graph-uri=&query='
-    } else if(SERVER.indexOf(":3000") > 0) {
-        var SPARQL_ENDPOINT = SERVER.replace(":3000", "") + ':8890/sparql?default-graph-uri=&query='
-    } else {
-        var SPARQL_ENDPOINT = SERVER.replace(":3000", "") + ':8890/sparql?default-graph-uri=seek:public&query='
-    }
     document.getElementById("ssearch").style.display = "block";
     document.getElementById("asearch").style.display = "block";
 } else {
@@ -298,6 +292,8 @@ function fillTable(result) {
     result.head.vars.forEach(function (entry) {
         if (entry.indexOf("URI") === -1) {
             table += '<th><a>' + entry + '</a></th>'
+        } else {
+            table += '<th><a></a></th>'
         }
     });
     table += '</tr></thead><tbody>'
@@ -630,6 +626,7 @@ function getrow(r) {
     str2 = str2 + y;
     str3 = str3 + z;
     str4 = str4 + i;
+    console.log(str, str2, str3, str4)
     return [str, str2, str3, str4];
 }
 // Rerun the analysis with information from the results
