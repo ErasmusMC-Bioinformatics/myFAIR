@@ -27,10 +27,11 @@ The vcf file can be found [here](https://bioinf-galaxian.erasmusmc.nl/galaxy/lib
 * python-magic 0.4.15 or higher
 * plotly 3.3.0 or higher
 * sparqlwrapper 1.8.2 or higher
+* EDAM browser
 * An account on a local or external Galaxy server with the following tools available:
     1. GEMINI (load, autosomal recessive/dominant, de novo, comp hets)
     2. Add Column, Strip Header and File Concatenate (all can be found under the name file_manipulation in the Galaxy tool shed)
-    3. The Galaxy server should allow an FTP connection in order for myFAIR to send the data.
+    3. The Galaxy server should allow an FTP to send data files larger than 2GB.
 * An account to an external SEEK server or a local SEEK server.
 
 ## <a name="installation-instructions">Installation Instructions</a>
@@ -45,7 +46,7 @@ To install myFAIR on your existing Virtual Machine follow these steps:
 sudo apt update
 sudo apt upgrade
 sudo apt install python3 python3-pip lftp
-pip3 install django bioblend rdflib plotly python-magic
+pip3 install django bioblend rdflib plotly python-magic sparqlwrapper
 ```
 
 #### Get myFAIR
@@ -70,6 +71,14 @@ If manage.py does not have the right permissions run the following command:
 chmod +x myFAIR/manage.py
 ```
 
+#### Get and run EDAM browser
+
+```bash
+git clone https://github.com/IFB-ElixirFr/edam-browser
+cd edam-browser
+python start_edam_stand_alone_browser.py
+```
+
 #### Test the server
 
 Go to 127.0.0.1:8080 (or other chosen port) and check if the myFAIR login page is visible.
@@ -88,8 +97,6 @@ Go to [usegalaxy](https://usegalaxy.eu) and create an account or log in with an 
 #### Importing the GEMINI workflow
 
 Import the GEMINI workflow using this url: https://usegalaxy.eu/u/rickjansen/w/geminivcfanalysis.
-
-
 
 <!-- # <a name="run-myfair-b2drop"></a> Run myFAIR with B2DROP
 In order to run myFAIR you need to follow these steps:
