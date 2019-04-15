@@ -14,9 +14,7 @@
 <div id="login">
     <h3 style="text-align:center;">myFAIR @ EMC login</h3>
     You need to log in to use this application. <br />
-    Please log in with your Galaxy API Key and owncloud credentials.<br />
-    You can find your API Key by login in to the Galaxy server and click User, <br />
-    then click API Keys. Here you will find your current API Key.<br />
+    Please log in with your Galaxy email and password and SEEK or NextCloud credentials.<br />
     <br />
     <p style="color:red">
         {{ error }}
@@ -24,6 +22,12 @@
     <form action="{% url 'index' %}" method="post">
         <table id="table-login">
             <span style="color:red">*</span> = required fields
+            <tr>
+                <td>
+                    <h2>Galaxy</h2>
+                    <hr>
+                </td>
+            </tr>
             <tr>
                 <td>Galaxy Server:<span style="color:red">*</span></td>
                 <td><input type="text" name="server" id="server" placeholder="Enter galaxy server" required></td>
@@ -36,10 +40,16 @@
                 <td>Galaxy Password:<span style="color:red">*</span></td>
                 <td><input type="password" name="galaxypass" id="galaxypass" placeholder="Enter your Galaxy password" required></td>
             </tr>
-            <tr>
+            <!-- <tr>
                 <td>Storage URL:<span style="color:red">*</span></td>
                 <td>
                     <input type="text" name="storage" id="storage" placeholder="i.e. seek.erasmusmc.nl" required>
+                </td>
+            </tr> -->
+            <tr>
+                <td>
+                    <h2>SEEK/NextCloud</h2>
+                    <hr>
                 </td>
             </tr>
             <tr>
@@ -55,7 +65,6 @@
                         <label for="typenextcloud"> NextCloud</label>
                     </fieldset>
                 </td>
-                
             </tr>
             <tr>
                 <td>Username:<span style="color:red">*</span></td>
