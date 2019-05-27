@@ -1619,7 +1619,7 @@ def create_new_hist(gi, galaxyemail, galaxypass, server,
     """
     date = format(datetime.now() + timedelta(hours=2))
     if workflowid != "0":
-        if len(list(filter(None, files))) > 0:
+        if len(list(filter(None, files))) >= 0:
             workflow = gi.workflows.show_workflow(workflowid)
             if new_hist is None or new_hist == "":
                 new_hist_name = (workflow['name'] + "_" + date)
@@ -1630,7 +1630,7 @@ def create_new_hist(gi, galaxyemail, galaxypass, server,
         else:
             pass
     else:
-        if len(list(filter(None, files))) > 0:
+        if len(list(filter(None, files))) >= 0:
             if new_hist is None or new_hist == "":
                 new_hist_name = ("Use_Galaxy_" + date)
             else:
@@ -2068,6 +2068,7 @@ def upload(request):
     control = request.POST.get('samples')
     test = request.POST.get('samplesb')
     new_hist = request.POST.get('historyname')
+    param = request.POST.get('param')
     group = request.POST.get('group')
     investigation = request.POST.get('investigation')
     date = format(datetime.now() + timedelta(hours=2))
@@ -2086,6 +2087,24 @@ def upload(request):
                                  workflowid, files, new_hist)
     inputs = {}
     if len(list(filter(None, files))) <= 0:
+        params = {"mtbls-dwnld": {"study": param}}
+        gi.workflows.run_workflow(workflowid, history_id=history_id, params=params)
+        resultid = uuid.uuid1()
+        datafiles = get_output(request.session.get('galaxyemail'),
+                               request.session.get('galaxypass'),
+                               request.session.get('server'))
+        store_results(1, gi, datafiles, request.session.get('server'),
+                      request.session.get('username'),
+                      request.session.get('password'),
+                      request.session.get('storage'), workflowid,
+                      groups, resultid, investigations, date, history_id,
+                      request.session.get("storage_type"))
+        store_results(3, gi, datafiles, request.session.get('server'),
+                      request.session.get('username'),
+                      request.session.get('password'),
+                      request.session.get('storage'), workflowid,
+                      groups, resultid, investigations, date, history_id,
+                      request.session.get("storage_type"))
         return HttpResponseRedirect(reverse("index"))
     else:
         if sendmeta != "true":
@@ -2235,6 +2254,8 @@ def store_results(column, gi, datafiles, server, username, password, storage,
         historyid: The Galaxy history ID.
         storagetype: The type of storage (SEEK or Owncloud)
     """
+    if not groups:
+        groups.append('Phenomenal')
     assay_id_list = []
     o = 0
     for name in datafiles[column]:
@@ -2353,7 +2374,6 @@ def store_results(column, gi, datafiles, server, username, password, storage,
             "curl -X GET \"" + storage +
             "/studies\" -H \"accept: application/json\""
         )
-        tags = ["tag1", "tag2"]
         json_studies = subprocess.Popen(
             [study_search_query],
             stdout=subprocess.PIPE,
@@ -2408,6 +2428,7 @@ def store_results(column, gi, datafiles, server, username, password, storage,
                 for ail in range(0, len(assays["data"])):
                     assay_id_list.append(int(assays["data"][ail]["id"]))
                 for galaxyfile in os.listdir(username):
+                    tags = []
                     seekupload(
                         username, password, storage, galaxyfile,
                         username + "/" + galaxyfile,
