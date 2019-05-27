@@ -394,6 +394,9 @@ function fillTable(result) {
         document.getElementById('workflow_select').style.display = "block";
         document.getElementById('show_results').style.display = "none";
         $('#galaxy').html(
+            '<input type="text" id="param" name="param" ' +
+            'style="width:10%;" placeholder="Give parameter for galaxy workflow (optional)"/>' +
+            '&nbsp<br>' +
             '<select name="filetype" id="filetype" class="select-option">' +
             '<optgroup label="File Type:" style="color: #21317F;">' +
             '<option value="auto">auto</option>' +
@@ -413,8 +416,8 @@ function fillTable(result) {
             '</select>' +
             '&nbsp' +
             '<input type="text" id="historyname" name="historyname" ' +
-            'style="width:25%;" placeholder="Enter new history name."/>' +
-            '&nbsp' +
+            'style="width:25%;" placeholder="Enter new history name (optional)"/>' +
+            '&nbsp <br>' +
             '<button id="index_buttons" onclick="postdata(\'group\')">' +
             '<span class="glyphicon glyphicon-forward" aria-hidden="true">' +
             '</span> send to galaxy ' +
@@ -494,6 +497,7 @@ function postdata(g) {
     var filetype = document.getElementById('filetype').value;
     var dbkey = document.getElementById('dbkey').value;
     var historyname = document.getElementById('historyname').value;
+    var param = document.getElementById('param').value;
     $.ajax({
         type: 'POST',
         url: "upload/",
@@ -502,7 +506,7 @@ function postdata(g) {
             'filetype': filetype, 'dbkey': dbkey, 'meta_id': meta_id,
             'selected': jsonSelected, 'meta': jsonMeta, 'sendmeta': sendmeta,
             'col': col, 'samples': jsonSamples, 'samplesb': jsonSamplesb,
-            'historyname': historyname, 'group': jsonGroup,
+            'historyname': historyname, 'group': jsonGroup, 'param': param,
             'investigation': jsonInvestigation
         },
         success: function (data) {
