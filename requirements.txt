@@ -1,4 +1,4 @@
-Django==2.1.10
+django>=2.1.11
 bioblend==0.12.0
 rdflib==4.2.2
 python-magic==0.4.15
