@@ -1,21 +1,34 @@
-/*
-** Creating the interface to make queries and show the data.
-** It also sends some important data to views.py to be able to 
-** upload data to Galaxy.
-*/
+/**
+ * Handling all the JavaScript for the myFAIR webpage. Generates the
+ * SPARQL queries to get the investigations, studies, assays and results 
+ * available in SEEK. Passes all needed variables to rerun an analysis to
+ * the Python code.
+ * 
+ * @summary Creating the myFAIR interface and connect with the Python code.
+ *
+ * @link   https://github.com/ErasmusMC-Bioinformatics/myFAIR
+ * @file   This files defines the myFAIR JavaScript functionality.
+ * @author Rick Jansen <rick.jansen1984@gmail.com>
+ */
 var USER = document.getElementById('user').innerHTML.replace('@', '');
 var SERVER = document.getElementById('storagename').innerHTML
 var STORAGETYPE = document.getElementById('storage-type').innerHTML
 var VIRTUOSO_URL = document.getElementById('virtuoso-url').innerHTML
 var SPARQL_ENDPOINT = VIRTUOSO_URL + '?default-graph-uri=&query='
+var SEARCH_ASSAY = ''
 if(STORAGETYPE === "SEEK") {
     document.getElementById("ssearch").style.display = "block";
     document.getElementById("asearch").style.display = "block";
 } else {
     var SPARQL_ENDPOINT = 'http://localhost:3030/ds/query?query='
 }
-// Show or hide divs and tables on page load
-// Create a var with all searchable items
+
+
+/**
+ * Show or hide divs and tables on page load.
+ * Run SPARQL queries to retrieve metadata from
+ * the virtuoso triple store.
+ */
 $(document).ready(function () {
     $("#samples").addClass('hidden');
     $("#search-panel").removeClass('hidden');
@@ -143,6 +156,12 @@ $(document).ready(function () {
         });
     }
 });
+
+
+/**
+ * Generate SPARQL queries to get metadata related to
+ * the data files on the SEEK server.
+ */
 function sparqlQuery() {
     $("#errorPanel").addClass('hidden');
     $("#infoPanel").addClass('hidden');
@@ -175,77 +194,28 @@ function sparqlQuery() {
                 "FILTER (!regex(?assay, '__result__', 'i')) . " +
                 "FILTER (!regex(?fileurl, 'samples', 'i')) . " +
                 "}";
-        } else {
-            var query = 
-                "SELECT DISTINCT ?pid ?meta ?investigation ?study ?sex " +
-                "?disease ?disease_iri ?method_iri ?sample FROM " +
-                "<http://127.0.0.1:3030/ds/data/" + USER + ">" +
-                "WHERE {" +
-                "?s <http://127.0.0.1:3030/ds/data?graph=" + USER +
-                "#pid> ?pid ." +
-                "?s <http://127.0.0.1:3030/ds/data?graph=" + USER +
-                "#meta> ?meta ." +
-                "?s <http://127.0.0.1:3030/ds/data?graph=" + USER +
-                "#investigation_id> ?investigation ." +
-                "?s <http://127.0.0.1:3030/ds/data?graph=" + USER +
-                "#group_id> ?study ." +
-                "?s <http://127.0.0.1:3030/ds/data?graph=" + USER +
-                "#sex> ?sex ." +
-                "?s <http://127.0.0.1:3030/ds/data?graph=" + USER +
-                "#sample_id> ?sample ." +
-                "?s <http://127.0.0.1:3030/ds/data?graph=" + USER +
-                "#disease> ?disease ." +
-                "?s <http://127.0.0.1:3030/ds/data?graph=" + USER +
-                "#disgenet_iri> ?disease_iri ." +
-                "?s <http://127.0.0.1:3030/ds/data?graph=" + USER +
-                "#edam_iri> ?method_iri ." +
-                "FILTER (CONTAINS(?sample, '" + ISEARCH +
-                "') || regex(?disease, '" + ISEARCH +
-                "', 'i') || regex(?study, '" + ISEARCH +
-                "', 'i') || regex(?investigation, '" + ISEARCH +
-                "', 'i'))} ORDER BY (?sample)";
-        }
+            SEARCH_ASSAY = ASEARCH;
+        } 
     }
     if (RSEARCH != '') {
-        if(STORAGETYPE === "SEEK"){
-            var query = 
-            "PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> " +
-            "PREFIX dcterms: <http://purl.org/dc/terms/> " +
-            "PREFIX jerm: <http://jermontology.org/ontology/JERMOntology#> " +
-            "SELECT DISTINCT ?assayid (?assay AS ?result_assay) ?investigation ?study ?date  WHERE {" +
-                "?i dcterms:title ?investigation ; " +
-                "rdf:type jerm:Investigation ." +
-                "?i jerm:itemProducedBy ?projectid . " +
-                "?projectid dcterms:title ?project . " +
-                "?i jerm:hasPart ?studyid . " +
-                "?studyid dcterms:title ?study . " +
-                "?studyid jerm:hasPart ?assayid . " +
-                "?assayid dcterms:title ?assay . " +
-                "?assayid dcterms:created ?date . " +
-                "?file jerm:isPartOf ?assayid . " + 
-                "?file dcterms:title ?filetitle . " +
-                "FILTER regex(?study, '" + RSEARCH + "', 'i') ." +
-                "FILTER regex(?assay, '__result__', 'i')} ORDER BY DESC(?date)";
-        } else {
-            var query = "SELECT DISTINCT (?s as ?id) ?resultid ?investigation " +
-            "?study ?date ?workflow ?historyid FROM " +
-            "<http://127.0.0.1:3030/ds/data/" + USER + ">" +
-            "WHERE {" +
-            "?s <http://127.0.0.1:3030/ds/data?graph=" + USER +
-            "#results_id> ?resultid ." +
-            "?s <http://127.0.0.1:3030/ds/data?graph=" + USER +
-            "#group_id> ?study ." +
-            "?s <http://127.0.0.1:3030/ds/data?graph=" + USER +
-            "#investigation_id> ?investigation ." +
-            "?s <http://127.0.0.1:3030/ds/data?graph=" + USER +
-            "#workflow> ?workflow ." +
-            "?s <http://127.0.0.1:3030/ds/data?graph=" + USER +
-            "#historyid> ?historyid ." +
-            "?s <http://127.0.0.1:3030/ds/data?graph=" + USER +
-            "#date> ?date ." + "FILTER (regex(?study, '" + RSEARCH +
-            "', 'i') || regex(?investigation, '" + RSEARCH +
-            "', 'i'))} ORDER BY DESC(?date)";
-        }
+        var query = 
+        "PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> " +
+        "PREFIX dcterms: <http://purl.org/dc/terms/> " +
+        "PREFIX jerm: <http://jermontology.org/ontology/JERMOntology#> " +
+        "SELECT DISTINCT ?assayid (?assay AS ?result_assay) ?investigation ?study ?date  WHERE {" +
+            "?i dcterms:title ?investigation ; " +
+            "rdf:type jerm:Investigation ." +
+            "?i jerm:itemProducedBy ?projectid . " +
+            "?projectid dcterms:title ?project . " +
+            "?i jerm:hasPart ?studyid . " +
+            "?studyid dcterms:title ?study . " +
+            "?studyid jerm:hasPart ?assayid . " +
+            "?assayid dcterms:title ?assay . " +
+            "?assayid dcterms:created ?date . " +
+            "?file jerm:isPartOf ?assayid . " + 
+            "?file dcterms:title ?filetitle . " +
+            "FILTER regex(?study, '" + RSEARCH + "', 'i') ." +
+            "FILTER regex(?assay, '__result__', 'i')} ORDER BY DESC(?date)";
     }
     var isValueMissing = false;
     if (ISEARCH === '' && SSEARCH === '' && ASEARCH === '' && RSEARCH === '') {
@@ -280,6 +250,13 @@ function sparqlQuery() {
         });
     }
 }
+
+
+/**
+ * Generates a table with the results from the SPARQL queries.
+ * 
+ * @param {Object} result SPARQL query results
+ */
 function fillTable(result) {
     $("#infoPanel").addClass('hidden');
     $("#noResultPanel").addClass('hidden');
@@ -373,12 +350,22 @@ function fillTable(result) {
         previousButtonClass: "btn btn-primary btn-xs",
         nextButtonClass: "btn btn-primary btn-xs"
     });
+
+
+    /**
+     * Check if a column exists and has the specified header.
+     * 
+     * @param {string} tblSel Selected table header.
+     * @param {string} content Content of the table header.
+     */
     function hasColumn(tblSel, content) {
         var ths = document.querySelectorAll(tblSel + ' th');
         return Array.prototype.some.call(ths, function (el) {
             return el.textContent === content;
         });
     };
+
+
     if(STORAGETYPE === "SEEK"){
         var hasCol = hasColumn("#results_table thead", "result_assay");
     } else {
@@ -395,7 +382,7 @@ function fillTable(result) {
         document.getElementById('show_results').style.display = "none";
         $('#galaxy').html(
             '<input type="text" id="param" name="param" ' +
-            'style="width:10%;" placeholder="Give parameter for galaxy workflow (optional)"/>' +
+            'style="width:99%;" placeholder="Give parameter for galaxy workflow (optional)"/>' +
             '&nbsp<br>' +
             '<select name="filetype" id="filetype" class="select-option">' +
             '<optgroup label="File Type:" style="color: #21317F;">' +
@@ -425,7 +412,11 @@ function fillTable(result) {
             '</span></button>'
         );
     }
-    // Sort table when clicking on the header
+
+
+    /**
+     * Clicking on the table header.
+     */
     $('th').click(function () {
         var table = $(this).parents('table').eq(0)
         var rows = table.find(
@@ -434,6 +425,13 @@ function fillTable(result) {
         if (!this.desc) { rows = rows.reverse() }
         for (var i = 0; i < rows.length; i++) { table.append(rows[i]) }
     })
+
+
+    /**
+     * Sort on the header when clicked on.
+     * 
+     * @param {number} index Row number.
+     */
     function comparer(index) {
         return function (a, b) {
             var valA = getCellValue(a, index), valB = getCellValue(b, index)
@@ -441,6 +439,14 @@ function fillTable(result) {
                 $.isNumeric(valB) ? valA - valB : valA.localeCompare(valB))
         }
     }
+
+
+    /**
+     * Gets the value of a cell after sorting.
+     * 
+     * @param {object} row HTML object to get the row.
+     * @param {number} index Row number.
+     */
     function getCellValue(row, index) {
         return $(row).children('td').eq(index).html()
     }
@@ -449,25 +455,26 @@ function fillTable(result) {
         $("#results_table").addClass('hidden');
     }
 }
-function postdata(g) {
+
+
+/**
+ * Send all selected data to the python code 
+ * so it can be send to a Galaxy server.
+ * 
+ * @param {string} groupname Group name.
+ */
+function postdata(groupname) {
     document.getElementById('loading').style.display = "block";
     var workflowid = document.getElementById('workflow').value;
     var selected = new Array;
     var selectout = new Array;
-    var sendmeta = "";
-    var col = "";
-    if (document.getElementById('sendmeta').checked) {
-        var sendmeta = document.getElementById('sendmeta').value;
-    }
-    if (document.getElementById('col').checked) {
-        var col = document.getElementById('col').value;
-    }
     var dat = [];
-    var meta = [];
     var group = [];
     var investigation = [];
     var samples = new Array;
     var samplesb = new Array;
+    var searched_assay = SEARCH_ASSAY;
+    console.log(searched_assay);
     // Add sample to list if checkbox is checked
     $("input:checkbox[name=samplea]:checked").each(function () {
         samples.push($(this).val());
@@ -481,18 +488,16 @@ function postdata(g) {
     });
     for (s = 0; s < selected.length; s++) {
         dat.push(getrow(selected[s])[0]);
-        meta.push(getrow(selected[s])[1]);
+        // meta.push(getrow(selected[s])[1]);
         group.push(getrow(selected[s])[2]);
         investigation.push(getrow(selected[s])[3]);
     }
     var jsonSamples = JSON.stringify(samples);
     var jsonSamplesb = JSON.stringify(samplesb);
     var jsonSelected = JSON.stringify(dat);
-    var jsonMeta = JSON.stringify(meta);
     var jsonGroup = JSON.stringify(group);
     var jsonInvestigation = JSON.stringify(investigation);
-    var data_id = checkData(g);
-    var meta_id = checkMeta(g);
+    var data_id = checkData(groupname);
     var token = "ygcLQAJkWH2qSfawc39DI9tGxisceVSTgw9h2Diuh0z03QRx9Lgl91gneTok";
     var filetype = document.getElementById('filetype').value;
     var dbkey = document.getElementById('dbkey').value;
@@ -503,11 +508,10 @@ function postdata(g) {
         url: "upload/",
         data: {
             'data_id': data_id, 'token': token, 'workflowid': workflowid,
-            'filetype': filetype, 'dbkey': dbkey, 'meta_id': meta_id,
-            'selected': jsonSelected, 'meta': jsonMeta, 'sendmeta': sendmeta,
-            'col': col, 'samples': jsonSamples, 'samplesb': jsonSamplesb,
+            'filetype': filetype, 'dbkey': dbkey, 'selected': jsonSelected,
+            'samples': jsonSamples, 'samplesb': jsonSamplesb,
             'historyname': historyname, 'group': jsonGroup, 'param': param,
-            'investigation': jsonInvestigation
+            'investigation': jsonInvestigation, 'searched_assay': searched_assay
         },
         success: function (data) {
             if (dat.length <= 0) {
@@ -531,7 +535,11 @@ function postdata(g) {
         }
     });
 }
-// Get selected output information
+
+
+/**
+ * Get selected output information
+ */
 function getoutput() {
     var selected = new Array;
     var group = [];
@@ -563,18 +571,29 @@ function getoutput() {
         }
     });
 }
+
+
+/**
+ * Refresh the page.
+ */
 function refresh() {
     window.location.href = "";
 }
-// Loop through the results_table and get the pid (first column)
-function checkData(g) {
+
+
+/**
+ * Get data from the results table.
+ * 
+ * @param {string} groupname Group name.
+ */
+function checkData(groupname) {
     var n1 = document.getElementById('results_table').rows.length;
     var i = 0, j = 0;
     var str = "";
     for (i = 0; i < n1; i++) {
         var groups = document.getElementById(
             'results_table').rows[i].cells.item(3).innerText;
-        if (groups == g) {
+        if (groups == groupname) {
             var n = i;
             var n2 = document.getElementById('results_table').rows[i].length;
             for (i = 1; i < n1; i++) {
@@ -589,43 +608,25 @@ function checkData(g) {
     }
     return str;
 }
-// Go through the results table and get the metadata
-function checkMeta(g) {
-    var n1 = document.getElementById('results_table').rows.length;
-    var i = 0, j = 0;
-    var str = "";
-    for (i = 0; i < n1; i++) {
-        var groups = document.getElementById(
-            'results_table').rows[i].cells.item(3).innerText;
-        if (groups == g) {
-            var n = i;
-            var n2 = document.getElementById('results_table').rows[i].length;
-            for (i = 1; i < n1; i++) {
-                var x = document.getElementById(
-                    'results_table').rows[n].cells.item(j + 2).innerText;
-            }
-        }
-        else {
-            x = "";
-        }
-        str = str + x;
-    }
-    return str;
-}
-// Get the selected row and return all columns
-function getrow(r) {
+
+/**
+ * Get the selected rows.
+ * 
+ * @param {string} row Row number needed to get text from specific row.
+ */
+function getrow(row) {
     var str = "";
     var str2 = "";
     var str3 = "";
     var str4 = "";
     var x = document.getElementById(
-        'results_table').rows[r].cells.item(1).innerText;
+        'results_table').rows[row].cells.item(1).innerText;
     var y = document.getElementById(
-        'results_table').rows[r].cells.item(2).innerText;
+        'results_table').rows[row].cells.item(2).innerText;
     var z = document.getElementById(
-        'results_table').rows[r].cells.item(4).innerText;
+        'results_table').rows[row].cells.item(4).innerText;
     var i = document.getElementById(
-        'results_table').rows[r].cells.item(3).innerText;
+        'results_table').rows[row].cells.item(3).innerText;
     str = str + x;
     str2 = str2 + y;
     str3 = str3 + z;
@@ -633,12 +634,21 @@ function getrow(r) {
     console.log(str, str2, str3, str4)
     return [str, str2, str3, str4];
 }
-// Rerun the analysis with information from the results
+
+
+/**
+ * Get all information needed to rerun an analysis.
+ */
 function rerun_analysis() {
     document.getElementById('input-list').style.display = "block";
     wid = document.getElementById("workflowid").innerText;
     inputs = document.getElementById("input-list").innerText;
     inputs = inputs.split('\n');
+    if ($('#omicsdi_link').length > 0) {
+        var omicsdi_link = document.getElementById("omicsdi_link").innerText;
+      } else {
+        var omicsdi_link;
+      }
     resultid = document.getElementById("title").innerText;
     var urls = [];
     for (i = 0; i <= (inputs.length - 1); i++) {
@@ -659,7 +669,7 @@ function rerun_analysis() {
         url: "rerun",
         data: {
             'workflowid': wid, 'inputs': inputs, 'urls': jsonURLS,
-            'resultid': resultid
+            'omicsdi_link':omicsdi_link ,'resultid': resultid
         },
         success: function (data) {
             document.getElementById('running').style.display = "none";
@@ -668,37 +678,6 @@ function rerun_analysis() {
         },
         error: function (data) {
             document.getElementById('running').style.display = "none";
-            document.getElementById('error').style.display = "block";
-            setTimeout(refresh, 5000);
-        },
-    });
-}
-// Import an existing Galaxy history.
-function import_history() {
-    tar = document.getElementById("tar").innerText;
-    resultid = document.getElementById("title").innerText;
-    // var urls = new Array;
-    // for (i = 0; i <= (inputs.length - 1); i++) {
-    //     urls.push(
-    //         resultid.replace(" ", "") + "/" +
-    //         inputs[i].replace(" ", "").replace("\n", "").replace(
-    //             "'", "").replace("[", "").replace("]", "").replace("'", "")
-    //     )
-    // }
-    // var jsonURLS = JSON.stringify(urls);
-    document.getElementById('running').style.display = "block";
-    $.ajax({
-        type: 'POST',
-        url: "import",
-        data: {
-            'tar': tar, 'resultid': resultid
-        },
-        success: function (data) {
-            document.getElementById('running').style.display = "none";
-            document.getElementById('finished').style.display = "block";
-            setTimeout(refresh, 5000);
-        },
-        error: function (data) {
             document.getElementById('error').style.display = "block";
             setTimeout(refresh, 5000);
         },
