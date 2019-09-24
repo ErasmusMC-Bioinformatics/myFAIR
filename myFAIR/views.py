@@ -988,38 +988,6 @@ def samples(request):
 
 
 @csrf_exempt
-def modify(request):
-    """Delete triples from the triple store.
-    This can be done based on an investigation or study name.
-
-    Arguments:
-        request: A request to get the current session.
-    """
-    if request.session.get('username') is not None:
-        if request.POST.get('ok') == 'ok':
-            if request.POST.get('dstudy') != "":
-                call([
-                    "bash ~/myFAIR/static/bash/triples.sh -u " +
-                    request.session.get('username').replace('@', '') +
-                    " -t5 -s " + request.POST.get('dstudy')
-                ], shell=True)
-            elif request.POST.get('dinvestigation') != "":
-                call([
-                    "bash ~/myFAIR/static/bash/triples.sh -u " +
-                    request.session.get('username').replace('@', '') +
-                    " -t6 -s " + request.POST.get('dinvestigation')
-                ], shell=True)
-        else:
-            err = "Please check accept to delete study or investigation"
-            return render(request, "modify.html", context={
-                'error': err,
-                'storagetype': request.session.get('storage_type')})
-        return HttpResponseRedirect(reverse('index'))
-    else:
-        return HttpResponseRedirect(reverse('index'))
-
-
-@csrf_exempt
 def triples(request):
     """Select the files that need to be stored in the triple store.
 
@@ -1173,7 +1141,6 @@ def get_history_id(gi):
     Returns:
         The current Galaxy history ID from the logged in user.
     """
-    # gi = GalaxyInstance(url=server, email=galaxyemail, password=galaxypass)
     cur_hist = gi.histories.get_current_history()
     current = json.dumps(cur_hist)
     current_hist = json.loads(current)
@@ -1192,7 +1159,6 @@ def get_input_data(gi):
         A list of input files from the Galaxy history and 
         the amount of input datasets in the history.
     """
-    # gi = GalaxyInstance(url=server, email=galaxyemail, password=galaxypass)
     history_id = get_history_id(gi)
     hist_contents = gi.histories.show_history(history_id, contents=True)
     inputs = {}
@@ -1470,7 +1436,7 @@ def upload(request):
             columns = [3]
     else:
         columns = [1,3]
-        tags = [history_id]
+        tags = [searched_assay]
         make_data_files(gi, files, request.session.get('username'),
                         request.session.get('password'),
                         request.session.get('galaxyemail'),
@@ -1730,8 +1696,7 @@ def show_results(request):
                                 link = (
                                     "https://www.omicsdi.org/dataset/" +
                                     json.loads(omicsdi_tag)['datasets'][0]["source"] +
-                                    "/" +
-                                    json.loads(omicsdi_tag)['datasets'][0]["id"]
+                                    "/" + json.loads(omicsdi_tag)['datasets'][0]["id"]
                                 )
                                 taglinks.append(link)
                         call(
@@ -1941,6 +1906,7 @@ def rerun_seek(gi, storage, resultid, galaxyemail, galaxypass, ftp,
         CalledProcessError: An error occurred when uploading data 
         to the Galaxy server using the FTP address.
     """
+    print(omicsdi_link)
     df_id_list = []
     uploaded_files = []
     gacont = None
