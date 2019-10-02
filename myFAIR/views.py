@@ -47,12 +47,10 @@ def login(request):
         password = request.POST.get('password')
         galaxypass = request.POST.get("galaxypass")
         galaxyemail = request.POST.get("galaxyemail")
-        storage = settings.SEEK_URL
         storagetype = "SEEK"
         noexpire = request.POST.get('no-expire')
-        if storage != "":
+        if settings.SEEK_URL != "":
             request.session['storage_type'] = storagetype
-            request.session['storage'] = storage
         else:
             request.session.flush()
         if galaxypass != "":
@@ -130,7 +128,6 @@ def index(request):
         investigations = []
         username = request.session.get('username')
         password = request.session.get('password')
-        storage = settings.SEEK_URL
         virtuoso = settings.VIRTUOSO_JS_URL
         server = request.session.get('server')
         try:
@@ -155,7 +152,7 @@ def index(request):
             context={'workflows': workflows, 'histories': his,
                      'user': gusername, 'username': username,
                      'password': password, 'server': server,
-                     'storage': storage,
+                     'storage': settings.SEEK_URL,
                      'storagetype': request.session.get('storage_type'),
                      'virtuoso_url': virtuoso,
                      'investigations': investigations,
@@ -166,7 +163,7 @@ def index(request):
         )
 
 
-def check_seek_permissions(username, password, server, userid, studyid):
+def check_seek_permissions(username, password, userid, studyid):
     """Checks if the user has permissions to add an assay to the 
     selected study. Returns a true if user can create the assay.
 
@@ -181,7 +178,7 @@ def check_seek_permissions(username, password, server, userid, studyid):
         True/False: The user has permissions to add an assay to the study or 
         the user does not have permissions to add an assay to the study.
     """
-    peoplequery = ("curl -X GET " + server + "/people/" + str(userid) +
+    peoplequery = ("curl -X GET " + settings.SEEK_URL + "/people/" + str(userid) +
                    " -H \"accept: application/json\"")
     sids = []
     userinfo = subprocess.Popen([peoplequery],
@@ -199,14 +196,13 @@ def check_seek_permissions(username, password, server, userid, studyid):
 
 
 @csrf_exempt
-def seekupload(username, password, storage, title, file, filename,
+def seekupload(username, password, title, file, filename,
                content_type, userid, projectid, assayid, description, tags):
     """Uploads data files to an assay.
 
     Arguments:
         username: SEEK username.
         password: SEEK password.
-        storage: SEEK URL
         title: Title of the uploaded data file.
         file: The file that will be uploaded to the SEEK server.
         filename: Name of the uploaded file.
@@ -225,7 +221,7 @@ def seekupload(username, password, storage, title, file, filename,
         tagstring += "\\\"" + tags[0] + "\\\""
     data_instance_query = (
         "curl -u " + username + ":" + password +
-        " -X POST \"" + storage + "/data_files\" "
+        " -X POST \"" + settings.SEEK_URL + "/data_files\" "
         "-H \"accept: application/json\" "
         "-H \"Content-Type: application/json\" "
         "-d \"{ \\\"data\\\": { \\\"type\\\": \\\"data_files\\\", "
@@ -259,10 +255,10 @@ def seekupload(username, password, storage, title, file, filename,
         "\\\"type\\\": \\\"assays\\\" } ] } } }} \""
     )
     call([data_instance_query], shell=True)
-    seek_data_ids = []  # List with data_file ids
+    seek_data_ids = []
     get_data_files = (
         "curl -X GET \"" +
-        storage + "/data_files\" "
+        settings.SEEK_URL + "/data_files\" "
         "-H \"accept: application/json\""
     )
     all_data_files = subprocess.Popen(
@@ -272,7 +268,7 @@ def seekupload(username, password, storage, title, file, filename,
         seek_data_ids.append(int(data_files["data"][df]["id"]))
     get_content_blob = (
         "curl -X GET \"" +
-        storage + "/data_files/" + str(max(seek_data_ids)) +
+        settings.SEEK_URL + "/data_files/" + str(max(seek_data_ids)) +
         "\" -H \"accept: application/json\""
     )
     json_blob = subprocess.Popen(
@@ -291,7 +287,7 @@ def seekupload(username, password, storage, title, file, filename,
     return HttpResponseRedirect(reverse("index"))
 
 
-def create_study(username, password, server, userid, projectid,
+def create_study(username, password, userid, projectid,
                  investigationid, title, description, studyname):
     """Creates a new study in SEEK.
 
@@ -308,7 +304,7 @@ def create_study(username, password, server, userid, projectid,
     """
     study_creation_query = (
         "curl -u " + username + ":" + password +
-        " -X POST \"" + server + "/studies\" "
+        " -X POST \"" + settings.SEEK_URL + "/studies\" "
         "-H \"accept: application/json\" "
         "-H \"Content-Type: application/json\" "
         "-d \"{ \\\"data\\\": "
@@ -337,14 +333,13 @@ def create_study(username, password, server, userid, projectid,
     call([study_creation_query], shell=True)
 
 
-def create_assay(username, password, server, userid, projectid, studyid,
+def create_assay(username, password, userid, projectid, studyid,
                  title, description, assay_type, technology_type, assayname):
     """Creates a new assay in SEEK.
 
     Arguments:
         username {str} -- SEEK Login name
         password {str} -- SEEK password
-        server {str} -- SEEK server URL
         userid {int} -- Creator ID in SEEK
         projectid {int} -- Selected SEEK project ID.
         studyid {int} -- Selected SEEK study ID.
@@ -355,10 +350,10 @@ def create_assay(username, password, server, userid, projectid, studyid,
         when creating a new assay.
         assayname {str} -- The name of the new assay.
     """
-    if check_seek_permissions(username, password, server, userid, studyid):
+    if check_seek_permissions(username, password, userid, studyid):
         assay_creation_query = (
             "curl -u " + username + ":" + password +
-            " -X POST \"" + server + "/assays\" "
+            " -X POST \"" + settings.SEEK_URL + "/assays\" "
             "-H \"accept: application/json\" "
             "-H \"Content-Type: application/json\" "
             "-d \"{ \\\"data\\\": "
@@ -656,7 +651,7 @@ def seek(request):
                 create_study(
                     request.session.get('username'),
                     request.session.get('password'),
-                    request.session.get('storage'),
+                    # request.session.get('storage'),
                     userid,
                     selected_project_id,
                     selected_investigation_id,
@@ -670,7 +665,7 @@ def seek(request):
                 seekcheck = create_assay(
                     request.session.get('username'),
                     request.session.get('password'),
-                    request.session.get('storage'),
+                    # request.session.get('storage'),
                     userid,
                     selected_project_id,
                     selected_study_id,
@@ -705,7 +700,6 @@ def seek(request):
                 seekupload(
                     request.session.get('username'),
                     request.session.get('password'),
-                    request.session.get('storage'),
                     request.POST.get('datatitle'),
                     os.path.join(upload_full_path, upload.name),
                     upload.name,
@@ -751,13 +745,12 @@ def seek(request):
                  'storage': request.session.get('storage')})
 
 
-def get_investigation_folders(storage, storagetype, username, password):
+def get_investigation_folders(storagetype, username, password):
     """Gets the user's investigation folders from the storage URL,
     This will be shown on the homepage for storing existing Galaxy 
     histories.
 
     Arguments:
-        storage: The URL of the ISA structure storage.
         storagetype: The storage type (SEEK or Owncloud)
         username: The username of the ISA structure storage.
         password: The password of the ISA structure storage.
@@ -775,12 +768,11 @@ def get_investigation_folders(storage, storagetype, username, password):
     return inv_folders, oc_folders
 
 
-def get_study_folders(storage, storagetype, username, password, investigation):
+def get_study_folders(storagetype, username, password, investigation):
     """Gets the study folders based on the selected investigation from the
     homepage. This is used to store existing Galaxt histories.
 
     Arguments:
-        storage: The URL of the ISA structure storage.
         storagetype: To show if the storage is SEEK or ownCloud.
         username: The username of the ISA structure storage.
         password: The password of the ISA structure storage.
@@ -858,20 +850,19 @@ def get_seek_userid(server, username, password, fullname):
     return userid
 
 
-def get_seek_investigations(username, password, storage):
+def get_seek_investigations(username, password):
     """Get all SEEK investigations that the logged in user has access to.
 
     Arguments:
         username: The SEEK username.
         password: The SEEK password.
-        storage: The SEEK URL.
 
     Returns:
         A dictionary with SEEK investigations and URLs.
     """
     investigations = {}
     investigation_titles = subprocess.Popen([
-        "curl -s -u \'" + username + "\':" + password + " " + storage +
+        "curl -s -u \'" + username + "\':" + password + " " + settings.SEEK_URL +
         "/investigations.xml | grep -e \'investigation xlink\' | "
         "sed -n \'s/.*title=\"\\([^\"]*\\).*/\\1/p\'"],
         stdout=subprocess.PIPE, shell=True).communicate()[0].decode()
@@ -879,7 +870,7 @@ def get_seek_investigations(username, password, storage):
     investigation_titles = list(filter(None, investigation_titles))
     for it in investigation_titles:
         investigation_id = subprocess.Popen([
-            "curl -s -u \'" + username + "\':" + password + " " + storage +
+            "curl -s -u \'" + username + "\':" + password + " " + settings.SEEK_URL +
             "/investigations.xml | grep -e \'" + it +
             "\' | sed -n \'s/.*href=\"\\([^\"]*\\).*/\\1/p\'"],
             stdout=subprocess.PIPE, shell=True).communicate()[0].decode()
@@ -887,13 +878,12 @@ def get_seek_investigations(username, password, storage):
     return investigations
 
 
-def get_seek_studies(username, password, storage, investigation):
+def get_seek_studies(username, password, investigation):
     """Get all SEEK studies based on an investigation.
     
     Arguments:
         username: The SEEK username.
         password: The SEEK password.
-        storage: The SEEK URL.
         investigation: Investigation name
 
     Returns:
@@ -901,7 +891,7 @@ def get_seek_studies(username, password, storage, investigation):
     """
     studies = {}
     investigation_title = investigation.split("/")[-1]
-    investigation_command = ("curl -X GET " + storage +
+    investigation_command = ("curl -X GET " + settings.SEEK_URL +
                              "/investigations/ -H \"accept: application/json\"")
     investigation_result = subprocess.Popen(
         [investigation_command],
@@ -911,7 +901,7 @@ def get_seek_studies(username, password, storage, investigation):
     for x in range(0, len(json_investigation["data"])):
         if json_investigation["data"][x]["attributes"]["title"] == investigation_title.strip("\n"):
             investigation_id = json_investigation["data"][x]["id"]
-    study_link_command = ("curl -X GET " + storage + "/investigations/" +
+    study_link_command = ("curl -X GET " + settings.SEEK_URL + "/investigations/" +
                           investigation_id + " -H \"accept: application/json\"")
     study_link = subprocess.Popen(
         [study_link_command], stdout=subprocess.PIPE, shell=True
@@ -921,7 +911,7 @@ def get_seek_studies(username, password, storage, investigation):
         json_study_link["data"]["relationships"]["studies"]["data"])
     for i in range(study_count):
         study_id = json_study_link["data"]["relationships"]["studies"]["data"][i]["id"]
-        study_command = ("curl -X GET " + storage + "/studies/" +
+        study_command = ("curl -X GET " + settings.SEEK_URL + "/studies/" +
                          study_id + " -H \"accept: application/json\"")
         study_results = subprocess.Popen(
             [study_command],
@@ -933,13 +923,12 @@ def get_seek_studies(username, password, storage, investigation):
     return studies
 
 
-def get_seek_assays(username, password, storage, study):
+def get_seek_assays(username, password, study):
     """Gets the SEEK assays based on a study.
 
     Arguments:
         username: The SEEK username.
         password: The SEEK password.
-        storage: The SEEK URL.
         study: Study ID
 
     Returns:
@@ -948,7 +937,7 @@ def get_seek_assays(username, password, storage, study):
     assays = {}
     study_id = study.split("/")[-1]
     assay_titles = subprocess.Popen([
-        "curl -s -u \'" + username + "\':" + password + " " + storage +
+        "curl -s -u \'" + username + "\':" + password + " " + settings.SEEK_URL +
         "/studies/" + study_id + ".xml | grep -e \'study xlink\' | "
                                  "sed -n \'s/.*title=\"\\([^\"]*\\).*/\\1/p\'"
     ], stdout=subprocess.PIPE, shell=True).communicate()[0].decode()
@@ -956,7 +945,7 @@ def get_seek_assays(username, password, storage, study):
     assay_titles = list(filter(None, assay_titles))
     for at in assay_titles:
         assay_id = subprocess.Popen([
-            "curl -s -u \'" + username + "\':" + password + " " + storage +
+            "curl -s -u \'" + username + "\':" + password + " " + settings.SEEK_URL +
             "/studies/" + study_id + ".xml | grep -e \'" + at +
             "\' | sed -n \'s/.*href=\"\\([^\"]*\\).*/\\1/p\'"
         ], stdout=subprocess.PIPE, shell=True).communicate()[0].decode()
@@ -1007,8 +996,7 @@ def triples(request):
             oc_folders = []
             inv_names = get_seek_investigations(
                 request.session.get('username'),
-                request.session.get('password'),
-                request.session.get('storage'))
+                request.session.get('password'))
             for it, dummyii in inv_names.items():
                 oc_folders.append(it)
         if list(filter(None, oc_folders)):
@@ -1034,7 +1022,7 @@ def triples(request):
                     assays = get_seek_assays(
                         request.session.get('username'),
                         request.session.get('password'),
-                        request.session.get('storage'), study)
+                        study)
                     for dummyat, ai in assays.items():
                         filelist.append(ai)
                 for f in filelist:
@@ -1094,8 +1082,7 @@ def investigation(request):
     if request.session.get('username') is not None:
         inv_names = get_seek_investigations(
             request.session.get('username'),
-            request.session.get('password'),
-            request.session.get('storage'))
+            request.session.get('password'))
         oc_folders = inv_names.keys()
         if list(filter(None, oc_folders)):
             folders = []
@@ -1113,8 +1100,7 @@ def investigation(request):
                     if it == request.POST.get('folder'):
                         studydict = get_seek_studies(
                             request.session.get('username'),
-                            request.session.get('password'),
-                            request.session.get('storage'), it)
+                            request.session.get('password'), it)
                 for st, dummysi in studydict.items():
                     oc_studies.append(st)
             else:
@@ -1186,7 +1172,6 @@ def get_selection(iselect, gselect, select):
     """
     groups = []
     files = []
-    # mfiles = []
     investigations = []
     for g in gselect:
         groups.append(g.replace('[', '').replace('"', '').replace(']', ''))
@@ -1279,7 +1264,7 @@ def make_data_files(gi, files, username, password, galaxyemail, galaxypass,
                 file_url = json_file_info["data"]["attributes"]["versions"][v]["url"]
                 filename = json_file_info["data"]["attributes"]["content_blobs"][0]["original_filename"]
             file_url = file_url.replace('?', '/download?')
-            call(["curl -L " + file_url + " -o " +
+            call(["curl -L \'" + file_url.replace('http://localhost:3000', settings.SEEK_URL) + "\' -o " +
                   username + "/input_" + filename], shell=True)
             gi.tools.upload_file(
                 username + "/input_" + filename,
@@ -1332,12 +1317,6 @@ def omicsdi(gi, username, history_id, file_type, dbkey, omics_di_url):
         file_type: galaxy file type.
         dbkey: Galaxy dbkey
         omics_di_url: The JSON URL of the Omics DI entry.
-
-    Raises:
-        ...
-    
-    Returns:
-        TODO: Will return links? Datasets? Nothing?
     """
     searchomicsapi = ("curl https://www.omicsdi.org:443/ws/dataset/search?query=" +
                       omics_di_url + "&start=0&size=20&faceCount=20")
@@ -1410,7 +1389,7 @@ def upload(request):
         if param != "":
             omicsdi(gi, request.session.get('username'),
                     history_id, filetype, dbkey, param)
-            get_assays_cmd = ("curl -X GET \"" + request.session.get('storage') +
+            get_assays_cmd = ("curl -X GET \"" + settings.SEEK_URL +
                               "\"/assays -H \"accept: application/json\"")
             all_assays = subprocess.Popen(
                 [get_assays_cmd],
@@ -1419,13 +1398,13 @@ def upload(request):
             for ar in range(0, len(json_assays["data"])):
                 if json_assays["data"][ar]["attributes"]["title"] in searched_assay:
                     assayid = json_assays["data"][ar]["id"]
-            get_assay_cmd = ("curl -X GET \"" + request.session.get('storage') + "\"/assays/" +
+            get_assay_cmd = ("curl -X GET \"" + settings.SEEK_URL + "\"/assays/" +
                              assayid + " -H \"accept: application/json\"")
             selected_assay = subprocess.Popen(
                 [get_assay_cmd],
                 stdout=subprocess.PIPE, shell=True).communicate()[0].decode()
             json_assay = json.loads(selected_assay)
-            get_study_cmd = ("curl -X GET \"" + request.session.get('storage') + "\"/studies/" +
+            get_study_cmd = ("curl -X GET \"" + settings.SEEK_URL + "\"/studies/" +
                              json_assay["data"]["relationships"]["study"]["data"]['id'] + " -H \"accept: application/json\"")
             study_info = subprocess.Popen(
                 [get_study_cmd],
@@ -1475,9 +1454,8 @@ def upload(request):
         store_results(columns, gi, datafiles, request.session.get('server'),
                         request.session.get('username'),
                         request.session.get('password'),
-                        request.session.get('storage'), workflowid,
-                        groups, resultid, investigations, date, history_id,
-                        request.session.get("storage_type"), tags)
+                        workflowid, groups, resultid, investigations, date, 
+                        history_id,request.session.get("storage_type"), tags)
         return render_to_response('results.html', context={
             'storagetype': request.session.get('storage_type'),
             'workflowid': workflowid,
@@ -1516,13 +1494,11 @@ def make_collection(data_ids):
     return collection
 
 
-def store_results(column, gi, datafiles, server, username, password, storage,
+def store_results(column, gi, datafiles, server, username, password,
                   workflowid, groups, resultid, investigations, date,
                   historyid, storagetype, tags):
     """Store input and output files that where created or used in a
     Galaxy workflow.
-
-    TODO: Something goes wrong here!
     
     Arguments:
         column: Column number containing 1 or 3. 
@@ -1532,7 +1508,6 @@ def store_results(column, gi, datafiles, server, username, password, storage,
         server: The Galaxy server URL.
         username: Username used for the storage location.
         password: Password used for the storage location.
-        storage: The URL for the storage location.
         workflowid: The Galaxy workflow ID.
         groups: A list of studies.
         resultid: The result ID. 
@@ -1548,7 +1523,6 @@ def store_results(column, gi, datafiles, server, username, password, storage,
     for c in column:
         o = 0
         for name in datafiles[c]:
-            # if "input_" not in name:
             cont = subprocess.Popen([
                 "curl -s -k " + server + datafiles[c-1][o]
             ], stdout=subprocess.PIPE, shell=True).communicate()[0].decode()
@@ -1560,7 +1534,7 @@ def store_results(column, gi, datafiles, server, username, password, storage,
             o += 1
     if storagetype == "SEEK":
         study_search_query = (
-            "curl -X GET \"" + storage +
+            "curl -X GET \"" + settings.SEEK_URL +
             "/studies\" -H \"accept: application/json\""
         )
         json_studies = subprocess.Popen(
@@ -1574,7 +1548,7 @@ def store_results(column, gi, datafiles, server, username, password, storage,
             if study_name in groups:
                 studyid = studies["data"][s]["id"]
                 project_search_query = (
-                    "curl -X GET \"" + storage +
+                    "curl -X GET \"" + settings.SEEK_URL +
                     "/projects\" -H \"accept: application/json\""
                 )
                 json_projects = subprocess.Popen(
@@ -1585,7 +1559,7 @@ def store_results(column, gi, datafiles, server, username, password, storage,
                 projects = json.loads(json_projects)
                 for p in range(1, len(projects["data"]) + 1):
                     project_id_query = (
-                        "curl -X GET \"" + storage + "/projects/" +
+                        "curl -X GET \"" + settings.SEEK_URL + "/projects/" +
                         str(p) + "\" -H \"accept: application/json\""
                     )
                     json_project = subprocess.Popen([project_id_query], stdout=subprocess.PIPE,
@@ -1596,13 +1570,13 @@ def store_results(column, gi, datafiles, server, username, password, storage,
                             projectid = str(p)
                 assay_title = (study_name + "__result__" + str(resultid))
                 create_assay(
-                    username, password, storage, 1, projectid, studyid, assay_title,
+                    username, password, 1, projectid, studyid, assay_title,
                     "Results for ID: " + str(resultid),
                     "http://jermontology.org/ontology/JERMOntology#Experimental_assay_type",
                     "http://jermontology.org/ontology/JERMOntology#Technology_type", assay_title
                 )
                 assay_search_query = (
-                    "curl -X GET \"" + storage + "/assays\" -H \"accept: application/json\""
+                    "curl -X GET \"" + settings.SEEK_URL + "/assays\" -H \"accept: application/json\""
                 )
                 json_assays = subprocess.Popen(
                     [assay_search_query],
@@ -1616,7 +1590,7 @@ def store_results(column, gi, datafiles, server, username, password, storage,
                     assay_id_list.append(int(assays["data"][ail]["id"]))
                 for galaxyfile in os.listdir(username):
                     seekupload(
-                        username, password, storage, galaxyfile,
+                        username, password, galaxyfile,
                         username + "/" + galaxyfile,
                         str(galaxyfile), content_type, 1, projectid,
                         str(max(assay_id_list)), workflowid, tags
@@ -1656,7 +1630,6 @@ def show_results(request):
         IndexError: An error occurred when getting the storage location.
     """
     username = request.session.get('username')
-    storage = request.session.get('storage')
     inputs = {}
     out = {}
     workflow = []
@@ -1674,14 +1647,14 @@ def show_results(request):
                 resultid = resultid.replace('"', '').strip("[").strip("]")
                 if "\\" in resultid:
                     resultid = resultid[:-2]
-                results = get_seek_result(storage, resultid)
+                results = get_seek_result(resultid)
                 for rid, rname in results.items():
                     if "_input_" in rname:
                         inputs[rid] = rname
                     elif ".ga" in rname:
                         seek_workflow = subprocess.Popen(
                             [
-                                "curl -X GET " + storage + "/data_files/" + rid +
+                                "curl -X GET " + settings.SEEK_URL + "/data_files/" + rid +
                                 " -H 'accept: application/json'"
                             ], stdout=subprocess.PIPE, shell=True
                         ).communicate()[0].decode()
@@ -1702,14 +1675,14 @@ def show_results(request):
                         call(
                             [
                                 "wget -O " + username + "/workflow.ga " +
-                                storage + "/data_files/" + rid +
+                                settings.SEEK_URL + "/data_files/" + rid +
                                 "/download?version=1"
                             ], shell=True
                         )
                         workflow = read_workflow(username + "/workflow.ga")
                         out[rid] = rname
                         get_file_cmd = (
-                            "curl -X GET \"" + storage + "/data_files/" + rid + "\" -H \"accept: application/json\"")
+                            "curl -X GET \"" + settings.SEEK_URL + "/data_files/" + rid + "\" -H \"accept: application/json\"")
                         data_files = subprocess.Popen(
                             [get_file_cmd],
                             stdout=subprocess.PIPE,
@@ -1727,7 +1700,7 @@ def show_results(request):
                     'inputs': inputs,
                     'outputs': out,
                     'workflow': workflow,
-                    'storage': storage,
+                    'storage': settings.SEEK_URL,
                     'resultid': resultid,
                     'workflowid': wid,
                     'tags': tags,
@@ -1736,18 +1709,17 @@ def show_results(request):
             return HttpResponseRedirect(reverse('index'))
 
 
-def get_seek_result(storage, assay):
+def get_seek_result(assay):
     """Get the results based on the SEEK assay name.
     Returns data file IDs and titles to show in the result page.
 
     Arguments:
-        storage: SEEK URL
         assay: Name of the assay where the result is stored.
 
     Returns:
         A Dictionary with data IDs and titles.
     """
-    get_assays_cmd = ("curl -X GET \"" + storage +
+    get_assays_cmd = ("curl -X GET \"" + settings.SEEK_URL +
                       "\"/assays -H \"accept: application/json\"")
     all_assays = subprocess.Popen(
         [get_assays_cmd],
@@ -1758,7 +1730,7 @@ def get_seek_result(storage, assay):
     for ar in range(0, len(json_assays["data"])):
         if json_assays["data"][ar]["attributes"]["title"] in assay:
             assayid = json_assays["data"][ar]["id"]
-    get_assay_cmd = ("curl -X GET \"" + storage + "\"/assays/" +
+    get_assay_cmd = ("curl -X GET \"" + settings.SEEK_URL + "\"/assays/" +
                      assayid + " -H \"accept: application/json\"")
     selected_assay = subprocess.Popen(
         [get_assay_cmd],
@@ -1768,7 +1740,7 @@ def get_seek_result(storage, assay):
         fileidlist.append(
             json_assay["data"]["relationships"]["data_files"]["data"][df]["id"])
     for fileid in fileidlist:
-        get_file_cmd = ("curl -X GET \"" + storage + "\"/data_files/" +
+        get_file_cmd = ("curl -X GET \"" + settings.SEEK_URL + "\"/data_files/" +
                         fileid + " -H \"accept: application/json\"")
         file_info = subprocess.Popen(
             [get_file_cmd],
@@ -1882,7 +1854,7 @@ def read_workflow(filename):
     return steplist
 
 
-def rerun_seek(gi, storage, resultid, galaxyemail, galaxypass, ftp,
+def rerun_seek(gi, resultid, galaxyemail, galaxypass, ftp,
                username, history_id, omicsdi_link):
     """Upload input files from a previous run to the Galaxy server.
     Get the JSON data from the Galaxy workflow file and return this to
@@ -1890,7 +1862,6 @@ def rerun_seek(gi, storage, resultid, galaxyemail, galaxypass, ftp,
 
     Arguments:
         gi: The Galaxy instance.
-        storage: SEEK URL to search an download the data files.
         resultid: The ID of the result to rerun.
         galaxyemail: Email address used for Galaxy login.
         galaxypass: Password used in Galaxy.
@@ -1906,13 +1877,12 @@ def rerun_seek(gi, storage, resultid, galaxyemail, galaxypass, ftp,
         CalledProcessError: An error occurred when uploading data 
         to the Galaxy server using the FTP address.
     """
-    print(omicsdi_link)
     df_id_list = []
     uploaded_files = []
     gacont = None
     get_assays = (
         "curl -X GET \"" +
-        storage + "/assays\" "
+        settings.SEEK_URL + "/assays\" "
         "-H \"accept: application/json\""
     )
     assays = subprocess.Popen(
@@ -1925,7 +1895,7 @@ def rerun_seek(gi, storage, resultid, galaxyemail, galaxypass, ftp,
             aid = json_assays["data"][x]["id"]
     get_result_assay = (
         "curl -X GET \"" +
-        storage + "/assays/" + str(aid) + "\" "
+        settings.SEEK_URL + "/assays/" + str(aid) + "\" "
         "-H \"accept: application/json\""
     )
     result_assay = subprocess.Popen(
@@ -1938,7 +1908,7 @@ def rerun_seek(gi, storage, resultid, galaxyemail, galaxypass, ftp,
     for did in df_id_list:
         get_data_file = (
             "curl -X GET \"" +
-            storage + "/data_files/" + str(did) + "\" "
+            settings.SEEK_URL + "/data_files/" + str(did) + "\" "
             "-H \"accept: application/json\""
         )
         data_file = subprocess.Popen(
@@ -1953,7 +1923,7 @@ def rerun_seek(gi, storage, resultid, galaxyemail, galaxypass, ftp,
                 call(
                     [
                         "wget -O " + username + "/\"" + filename + "\" " +
-                        storage + "/data_files/" + dataid +
+                        settings.SEEK_URL + "/data_files/" + dataid +
                         "/download?version=1"
                     ], shell=True
                 )
@@ -1969,7 +1939,7 @@ def rerun_seek(gi, storage, resultid, galaxyemail, galaxypass, ftp,
         if ".ga" in json_result_data["data"]["attributes"]["title"]:
             workflowfileid = json_result_data["data"]["id"]
             gacont = subprocess.Popen(
-                ["curl -s -k " + storage + "/data_files/" +
+                ["curl -s -k " + settings.SEEK_URL + "/data_files/" +
                     workflowfileid + "/download"],
                 stdout=subprocess.PIPE, shell=True).communicate()[0].decode()
     if omicsdi_link:
@@ -2077,7 +2047,6 @@ def rerun_analysis(request):
     if request.session.get('storage_type') == "SEEK":
         rerun_seek(
             gi,
-            request.session.get('storage'),
             request.POST.get('resultid'),
             request.session.get("galaxyemail"),
             request.session.get("galaxypass"),
