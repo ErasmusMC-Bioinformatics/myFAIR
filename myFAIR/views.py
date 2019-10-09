@@ -275,6 +275,7 @@ def seekupload(username, password, title, file, filename,
         [get_content_blob], stdout=subprocess.PIPE, shell=True).communicate()[0].decode()
     content_blob = json.loads(json_blob)
     content_blob_url = content_blob["data"]["attributes"]["content_blobs"][0]["link"]
+    content_blob_url = content_blob_url.replace("http://localhost:3000", settings.SEEK_URL)
     data_file_query = (
         "curl -u " +
         username + ":" + password +
@@ -1517,8 +1518,6 @@ def store_results(column, gi, datafiles, server, username, password,
         storagetype: The type of storage (SEEK or Owncloud)
         tags: Tags to add to the result assay
     """
-    if not groups:
-        groups.append('Phenomenal')
     assay_id_list = []
     for c in column:
         o = 0
