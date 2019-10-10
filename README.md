@@ -31,7 +31,7 @@ The vcf file can be found [here](https://bioinf-galaxian.erasmusmc.nl/galaxy/lib
     1. GEMINI (load, autosomal recessive/dominant, de novo, comp hets)
     2. Add Column, Strip Header and File Concatenate (all can be found under the name file_manipulation in the Galaxy tool shed)
     3. The Galaxy server should allow an FTP to send data files larger than 2GB.
-* An account to an external SEEK server or a local SEEK server.
+* An account to an external SEEK server or a local SEEK server (1.7.0 or higher) with a linked Virtuoso triple store.
 
 ## <a name="installation-instructions">Installation Instructions</a>
 
@@ -93,6 +93,21 @@ Go to 127.0.0.1:20080 to see if the EDAM browser is available.
 
 You can download the latest version of SEEK [here](https://github.com/seek4science/seek). For more information on installing SEEK click [here](https://docs.seek4science.org/tech/install.html).\
 Follow [these](https://docs.seek4science.org/tech/setting-up-virtuoso.html) instructions to install the Virtuoso triple store and connect the triple store to your SEEK server.
+
+#### Grant Virtuoso permissions
+
+```bash
+isql-vt -U dba
+```
+
+Enter dba password:
+
+```bash
+grant execute on SPARQL_DELETE_DICT_CONTENT to "SPARQL";
+grant execute on SPARQL_DELETE_DICT_CONTENT to SPARQL_UPDATE;
+grant select on "DB"."DBA"."SPARQL_SINV_2" TO "SPARQL";
+grant execute on "DB"."DBA"."SPARQL_SINV_IMP" TO "SPARQL";
+```
 
 ### <a name="galaxy">Galaxy</a>
 
