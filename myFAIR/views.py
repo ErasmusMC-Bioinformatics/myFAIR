@@ -45,12 +45,14 @@ def login(request):
             server = request.POST.get('server') + '/'
         username = request.POST.get('username')
         password = request.POST.get('password')
+        fullname = request.POST.get('fullname')
         galaxypass = request.POST.get("galaxypass")
         galaxyemail = request.POST.get("galaxyemail")
         storagetype = "SEEK"
         noexpire = request.POST.get('no-expire')
         if settings.SEEK_URL != "":
             request.session['storage_type'] = storagetype
+            request.session['storage'] = settings.SEEK_URL
         else:
             request.session.flush()
         if galaxypass != "":
@@ -74,7 +76,8 @@ def login(request):
             request.session.flush()
             return render_to_response('login.html', context={
                 'error': err})
-        if username != "" and password != "":
+        if username != "" and password != "" and fullname != "":
+            request.session['fullname'] = fullname
             request.session['username'] = username
             request.session['password'] = password
         else:
@@ -549,6 +552,7 @@ def seek(request):
         request: Getting the information needed to search the SEEK ISA structure.
     """
     projects = seek_sparql_projects()
+    fullname = request.session.get('fullname')
     selected_project_id = ""
     selected_project_name = ""
     selected_investigation_id = ""
@@ -561,7 +565,6 @@ def seek(request):
     cna = ""
     eids = {}
     dids = []
-    fullname = ""
     tags = []
     edamterm = ""
     if request.POST.get('stored_disgenet') is not None:
@@ -594,12 +597,11 @@ def seek(request):
         else:
             dids = {}
         if request.POST.get("user") is not None or request.POST.get("user") != "":
-            if fullname == "":
-                fullname = request.POST.get("user")
-            userid = get_seek_userid(request.session.get('storage'),
-                                     request.session.get('username'),
-                                     request.session.get('password'),
-                                     fullname)
+            userid = get_seek_userid(
+                request.session.get('username'),
+                request.session.get('password'),
+                fullname
+            )
             if userid is None:
                 return HttpResponseRedirect(reverse('seek'))
             # Get projects
@@ -827,11 +829,10 @@ def get_galaxy_info(url, email, password):
     return gusername, workflows, his, dbkeys
 
 
-def get_seek_userid(server, username, password, fullname):
+def get_seek_userid(username, password, fullname):
     """Gets the SEEK user ID based on the full name of the user.
 
     Arguments:
-        server: SEEK server address.
         username: SEEK username
         password: SEEK password
         fullname: Full name of the user in SEEK.
@@ -839,7 +840,7 @@ def get_seek_userid(server, username, password, fullname):
     Returns:
         The user ID based on the full name of the user or None.
     """
-    userquery = ("curl -X GET " + server +
+    userquery = ("curl -X GET " + settings.SEEK_URL +
                  "/people -H \"accept: application/json\"")
     getpeople = subprocess.Popen(
         [userquery], stdout=subprocess.PIPE, shell=True).communicate()[0].decode()
@@ -1009,6 +1010,7 @@ def triples(request):
             metalist = request.POST.get('metalist')
             disgenet = request.POST.get('disgenet-tag')
             edam = request.POST.get('edam-tag')
+            print(edam)
             if request.POST.get('selected_folder') is not None:
                 inv = request.POST.get('selected_folder')
             if inv != "" and inv is not None:
@@ -1456,7 +1458,8 @@ def upload(request):
                         request.session.get('username'),
                         request.session.get('password'),
                         workflowid, groups, resultid, investigations, date, 
-                        history_id,request.session.get("storage_type"), tags)
+                        history_id,request.session.get("storage_type"), 
+                        tags, request.session.get('fullname'))
         return render_to_response('results.html', context={
             'storagetype': request.session.get('storage_type'),
             'workflowid': workflowid,
@@ -1497,7 +1500,7 @@ def make_collection(data_ids):
 
 def store_results(column, gi, datafiles, server, username, password,
                   workflowid, groups, resultid, investigations, date,
-                  historyid, storagetype, tags):
+                  historyid, storagetype, tags, fullname):
     """Store input and output files that where created or used in a
     Galaxy workflow.
     
@@ -1568,8 +1571,9 @@ def store_results(column, gi, datafiles, server, username, password,
                         if studyid == project["data"]["relationships"]["studies"]["data"][ps]["id"]:
                             projectid = str(p)
                 assay_title = (study_name + "__result__" + str(resultid))
+                userid = get_seek_userid(username, password, fullname)
                 create_assay(
-                    username, password, 1, projectid, studyid, assay_title,
+                    username, password, userid, projectid, studyid, assay_title,
                     "Results for ID: " + str(resultid),
                     "http://jermontology.org/ontology/JERMOntology#Experimental_assay_type",
                     "http://jermontology.org/ontology/JERMOntology#Technology_type", assay_title
