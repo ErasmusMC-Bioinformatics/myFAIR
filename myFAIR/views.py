@@ -10,6 +10,7 @@ import uuid
 import tempfile
 import magic
 import random
+import requests
 
 from urllib.parse import urlparse
 from myFAIR import settings
@@ -306,35 +307,25 @@ def create_study(username, password, userid, projectid,
         description: Description entered when creating a new assay.
         studyname: The name of the new study.
     """
-    study_creation_query = (
-        "curl -u " + username + ":" + password +
-        " -X POST \"" + settings.SEEK_URL + "/studies\" "
-        "-H \"accept: application/json\" "
-        "-H \"Content-Type: application/json\" "
-        "-d \"{ \\\"data\\\": "
-        "{ \\\"type\\\": \\\"studies\\\", "
-        "\\\"attributes\\\": "
-        "{ \\\"title\\\": \\\"" + title + "\\\", "
-        "\\\"description\\\": \\\"" + description + "\\\", "
-        "\\\"person_responsible_id\\\": \\\"" + str(userid) + "\\\", "
-        "\\\"policy\\\": "
-        "{ \\\"access\\\": \\\"download\\\", "
-        "\\\"permissions\\\": [ { "
-        "\\\"resource\\\": "
-        "{ \\\"id\\\": \\\"" + str(projectid) + "\\\", "
-        "\\\"type\\\": \\\"projects\\\" }, "
-        "\\\"access\\\": \\\"view\\\" } ] } }, "
-        "\\\"relationships\\\": "
-        "{ \\\"investigation\\\": "
-        "{ \\\"data\\\": "
-        "{ \\\"id\\\": \\\"" + str(investigationid) + "\\\", "
-        "\\\"type\\\": \\\"investigations\\\" } }, "
-        "\\\"creators\\\": "
-        "{ \\\"data\\\": [ { "
-        "\\\"id\\\": \\\"" + str(userid) + "\\\", "
-        "\\\"type\\\": \\\"people\\\" } ] } } }}\""
+    post_url = settings.SEEK_URL + "/studies"
+    headers = {
+        'accept': 'application/json',
+        'Content-Type': 'application/json',
+    }
+    data = (
+        '{"data": {"type": "studies", "attributes": {"title": "' + title +
+        '", "description": "' + description + 
+        '", "person_responsible_id": "' + str(userid) +
+        '", "policy": {"access": "download",' +
+        '"premissions": [{"resource": {"id": "' + str(projectid) +
+        '", "type": "projects"}, "access": "view"}]} },' +
+        '"relationships": {"investigation": {"data": {"id": "' + str(investigationid) +
+        '","type": "investigations"} }, "creators": {"data": [{"id": "' + str(userid) +
+        '", "type": "people"}] } } } }'
     )
-    call([study_creation_query], shell=True)
+    requests.post(post_url, headers=headers,
+                    data=data, auth=(username, password))
+    return True
 
 
 def create_assay(username, password, userid, projectid, studyid,
@@ -355,38 +346,26 @@ def create_assay(username, password, userid, projectid, studyid,
         assayname {str} -- The name of the new assay.
     """
     if check_seek_permissions(username, password, userid, studyid):
-        assay_creation_query = (
-            "curl -u " + username + ":" + password +
-            " -X POST \"" + settings.SEEK_URL + "/assays\" "
-            "-H \"accept: application/json\" "
-            "-H \"Content-Type: application/json\" "
-            "-d \"{ \\\"data\\\": "
-            "{ \\\"type\\\": \\\"assays\\\", "
-            "\\\"attributes\\\": "
-            "{ \\\"title\\\": \\\"" + title + "\\\", "
-            "\\\"assay_class\\\": { \\\"key\\\": \\\"EXP\\\" }, "
-            "\\\"assay_type\\\": { \\\"uri\\\": \\\"" + assay_type + "\\\" }, "
-            "\\\"technology_type\\\": { \\\"uri\\\": \\\"" +
-            technology_type + "\\\" }, "
-            "\\\"description\\\": \\\"" + description + "\\\", "
-            "\\\"policy\\\": "
-            "{ \\\"access\\\": \\\"download\\\", "
-            "\\\"permissions\\\": [ { "
-            "\\\"resource\\\": "
-            "{ \\\"id\\\": \\\"" + str(projectid) + "\\\", "
-            "\\\"type\\\": \\\"projects\\\" }, "
-            "\\\"access\\\": \\\"view\\\" } ] } }, "
-            "\\\"relationships\\\": "
-            "{ \\\"study\\\": "
-            "{ \\\"data\\\": "
-            "{ \\\"id\\\": \\\"" + str(studyid) + "\\\", "
-            "\\\"type\\\": \\\"studies\\\" } }, "
-            "\\\"creators\\\": "
-            "{ \\\"data\\\": [ { "
-            "\\\"id\\\": \\\"" + str(userid) + "\\\", "
-            "\\\"type\\\": \\\"people\\\" } ] } } }}\""
+        post_url = settings.SEEK_URL + "/assays"
+        headers = {
+            'accept': 'application/json',
+            'Content-Type': 'application/json',
+        }
+        data = (
+            '{"data": {"type": "assays", "attributes": {"title": "' + title +
+            '", "assay_class": {"key": "EXP"},' +
+            '"assay_type": {"uri": "' + assay_type +
+            '"}, "technology_type": {"uri": "' + technology_type +
+            '"}, "description": "' + description +
+            '", "policy": {"access": "download",' +
+            '"premissions": [{"resource": {"id": "' + str(projectid) +
+            '", "type": "projects"}, "access": "view"}] } },' +
+            '"relationships": {"study": {"data": {"id": "' + str(studyid) +
+            '","type": "studies" } }, "creators": {"data": [{"id": "' + str(userid) +
+            '", "type": "people"}] } } } }'
         )
-        call([assay_creation_query], shell=True)
+        requests.post(post_url, headers=headers,
+                      data=data, auth=(username, password))
         return True
     else:
         return False
@@ -651,7 +630,7 @@ def seek(request):
             if (
                 request.POST.get('newstudy')
             ):
-                create_study(
+                studycheck = create_study(
                     request.session.get('username'),
                     request.session.get('password'),
                     # request.session.get('storage'),
@@ -662,13 +641,16 @@ def seek(request):
                     request.POST.get('sdescription'),
                     request.POST.get('newstudy')
                 )
+                if not studycheck:
+                    return HttpResponseRedirect(reverse('seek'))
+                else:
+                    return HttpResponseRedirect(reverse('index'))
             if (
                 request.POST.get('newassay')
             ):
-                seekcheck = create_assay(
+                assaycheck = create_assay(
                     request.session.get('username'),
                     request.session.get('password'),
-                    # request.session.get('storage'),
                     userid,
                     selected_project_id,
                     selected_study_id,
@@ -678,8 +660,10 @@ def seek(request):
                     request.POST.get('technology_type'),
                     request.POST.get('newassay')
                 )
-                if not seekcheck:
+                if not assaycheck:
                     return HttpResponseRedirect(reverse('seek'))
+                else:
+                    return HttpResponseRedirect(reverse('index'))
             if request.FILES.get('uploadfiles'):
                 tags.append(stored_disgenet)
                 tags.append(stored_edam.strip('\r\n'))
@@ -1010,7 +994,6 @@ def triples(request):
             metalist = request.POST.get('metalist')
             disgenet = request.POST.get('disgenet-tag')
             edam = request.POST.get('edam-tag')
-            print(edam)
             if request.POST.get('selected_folder') is not None:
                 inv = request.POST.get('selected_folder')
             if inv != "" and inv is not None:
