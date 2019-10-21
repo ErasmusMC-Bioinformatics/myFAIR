@@ -1501,7 +1501,7 @@ def make_collection(data_ids):
 def store_results(column, gi, datafiles, server, username, password,
                   workflowid, groups, resultid, investigations, date,
                   historyid, storagetype, tags, fullname):
-    """Store input and output files that where created or used in a
+    """Store input and output files that were created or used in a
     Galaxy workflow.
     
     Arguments:
@@ -1572,32 +1572,33 @@ def store_results(column, gi, datafiles, server, username, password,
                             projectid = str(p)
                 assay_title = (study_name + "__result__" + str(resultid))
                 userid = get_seek_userid(username, password, fullname)
-                create_assay(
-                    username, password, userid, projectid, studyid, assay_title,
-                    "Results for ID: " + str(resultid),
-                    "http://jermontology.org/ontology/JERMOntology#Experimental_assay_type",
-                    "http://jermontology.org/ontology/JERMOntology#Technology_type", assay_title
-                )
-                assay_search_query = (
-                    "curl -X GET \"" + settings.SEEK_URL + "/assays\" -H \"accept: application/json\""
-                )
-                json_assays = subprocess.Popen(
-                    [assay_search_query],
-                    stdout=subprocess.PIPE,
-                    shell=True
-                ).communicate()[0].decode()
-                assays = json.loads(json_assays)
-                mime = magic.Magic(mime=True)
-                content_type = mime.from_file(username + "/" + new_name)
-                for ail in range(0, len(assays["data"])):
-                    assay_id_list.append(int(assays["data"][ail]["id"]))
-                for galaxyfile in os.listdir(username):
-                    seekupload(
-                        username, password, galaxyfile,
-                        username + "/" + galaxyfile,
-                        str(galaxyfile), content_type, 1, projectid,
-                        str(max(assay_id_list)), workflowid, tags
+                if check_seek_permissions(username, password, userid, studyid):
+                    create_assay(
+                        username, password, userid, projectid, studyid, assay_title,
+                        "Results for ID: " + str(resultid),
+                        "http://jermontology.org/ontology/JERMOntology#Experimental_assay_type",
+                        "http://jermontology.org/ontology/JERMOntology#Technology_type", assay_title
                     )
+                    assay_search_query = (
+                        "curl -X GET \"" + settings.SEEK_URL + "/assays\" -H \"accept: application/json\""
+                    )
+                    json_assays = subprocess.Popen(
+                        [assay_search_query],
+                        stdout=subprocess.PIPE,
+                        shell=True
+                    ).communicate()[0].decode()
+                    assays = json.loads(json_assays)
+                    mime = magic.Magic(mime=True)
+                    content_type = mime.from_file(username + "/" + new_name)
+                    for ail in range(0, len(assays["data"])):
+                        assay_id_list.append(int(assays["data"][ail]["id"]))
+                    for galaxyfile in os.listdir(username):
+                        seekupload(
+                            username, password, galaxyfile,
+                            username + "/" + galaxyfile,
+                            str(galaxyfile), content_type, 1, projectid,
+                            str(max(assay_id_list)), workflowid, tags
+                        )
 
 
 def sha1sum(filename, blocksize=65536):
