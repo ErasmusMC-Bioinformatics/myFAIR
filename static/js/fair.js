@@ -382,7 +382,7 @@ function fillTable(result) {
         document.getElementById('show_results').style.display = "none";
         $('#galaxy').html(
             '<input type="text" id="param" name="param" ' +
-            'style="width:99%;" placeholder="Give parameter for galaxy workflow (optional)"/>' +
+            'style="width:99%;display:none;" placeholder="Enter Omics DI accession number (optional)"/>' +
             '&nbsp<br>' +
             '<select name="filetype" id="filetype" class="select-option">' +
             '<optgroup label="File Type:" style="color: #21317F;">' +
@@ -453,6 +453,7 @@ function fillTable(result) {
     if (!hasResult) {
         $("#noResultPanel").removeClass('hidden');
         $("#results_table").addClass('hidden');
+        document.getElementById('param').style.display = "block";
     }
 }
 
