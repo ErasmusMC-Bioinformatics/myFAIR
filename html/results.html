@@ -1,12 +1,11 @@
 {% extends 'base.html' %}
 {% load staticfiles %}
 {% block head %}
-<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
 <script type="text/javascript">
     function myFunction() {
         var x = document.getElementById("wrapper");
         var button = document.getElementById("showresults");
-        $("#wrapper").slideToggle('slow');
+        $("#wrapper").slideToggle(600, "linear");
         if (button.textContent === "Show Results") {
             button.textContent = "Hide Results";
         } else {
@@ -41,6 +40,7 @@
 </div>
 <br />
 <div id="wrapper" style="display:none;">
+    <hr class="result">
     <div class="resultDiv" id="input" style="overflow-x:auto;">
         <h3>Input Files</h3>
         <p>
@@ -58,26 +58,18 @@
                 {% endif %}
                 {% if inputs %}
                 <th>
-                    View <img src="{% static 'img/view.png' %}" alt="" class="img-thumbnail" width="15" height="15">
-                    <br />
-                    or
-                    <br />
-                    Download <img src="{% static 'img/download.png' %}" alt="" class="img-thumbnail" width="15" height="15">
-                    <br />
+                    &nbsp;
                 </th>
                     {% for inputid, input in inputs.items %}
                         <tr>
-                            <td>{{input}}</td>
-                            <td style="text-align:center;">
+                            <td>
+                                <a href="{{storage}}/data_files/{{inputid}}" target="_blank">
+                                    {{input}}
+                                </a>
+                            </td>
+                            <td>
                                 {% if storagetype == "SEEK" %}
-                                    <a href="{{storage}}/data_files/{{inputid}}" target="_blank">
-                                        <img src="{% static 'img/view.png' %}" alt="" class="img-thumbnail" width="15" height="15">
-                                    </a>
                                     <a href="{{storage}}/data_files/{{inputid}}/download" target="_blank">
-                                        <img src="{% static 'img/download.png' %}" alt="" class="img-thumbnail" width="15" height="15">
-                                    </a>
-                                {% else %}
-                                    <a href="{{storage}}/{{resultid}}/{{input}}">
                                         <img src="{% static 'img/download.png' %}" alt="" class="img-thumbnail" width="15" height="15">
                                     </a>
                                 {% endif %}
@@ -102,49 +94,68 @@
         </p>
     </div>
     <div class="resultDiv" id="analysis" style="overflow-x:auto;">
+        <h3>Output Files</h3>
+        <p>
+        <table class="tblresult" id="output-files">
+            <th>Filename</th>
+            <th>
+                &nbsp;
+            </th>
+            {% if outputs  %}
+                {% for outid, outname in outputs.items %}
+                    {% if ".ga" not in outname %}
+                        <tr>
+                            <td>
+                                <a href="{{storage}}/data_files/{{outid}}" target="_blank">
+                                    {{outname}} 
+                                </a>
+                            </td>
+                                {% if storagetype == "SEEK" %}
+                                <td>
+                                    <a href="{{storage}}/data_files/{{outid}}/download" target="_blank">
+                                        <img src="{% static 'img/download.png' %}" alt="" class="img-thumbnail" width="15" height="15">
+                                    </a>
+                                </td>
+                                {% endif %}
+                        </tr>
+                    {% endif %}
+                {% endfor %}
+            {% else %}
+                <tr><td>No output files.</td></tr>
+            {% endif %}
+        </table>
+    </div>
+    <div style="width: 100%;">
+        <hr class="result">
+    </div>
+    <div class="resultDiv" id="analysis" style="overflow-x:auto; clear: both;">
         <h3>Analysis Details</h3>
         <p>
             <table class="tblresult" id="analysis-info">
                 <th>Galaxy file</th>
                 <th>Galaxy workflow ID</th>
                 <th>
-                    View <img src="{% static 'img/view.png' %}" alt="" class="img-thumbnail" width="15" height="15">
-                    <br />
-                    or
-                    <br />
-                    Download <img src="{% static 'img/download.png' %}" alt="" class="img-thumbnail" width="15" height="15">
-                    <br />
+                    &nbsp;
                 </th>
                 {% if outputs %}
                     {% for outid, outname in outputs.items %}
                         {% if ".ga" in outname %}
                             <tr>
-                                <td>{{outname}}</td>
+                                <td>
+                                    <a href="{{storage}}/data_files/{{outid}}" target="_blank">
+                                        {{outname}}
+                                    </a>
+                                </td>
                                 <td id="workflowid">{{workflowid}}</td>
-                                <td style="text-align:center;">
+                                <td>
                                     {% if storagetype == "SEEK" %}
                                         <span id="ga" style="display: none">{{storage}}/data_files/{{outid}}</span>
                                         <a href="{{storage}}/data_files/{{outid}}" target="_blank">
-                                            <img src="{% static 'img/view.png' %}" alt="" class="img-thumbnail" width="15" height="15">
-                                        </a>
-                                        <a href="{{storage}}/data_files/{{outid}}" target="_blank">
-                                            <img src="{% static 'img/download.png' %}" alt="" class="img-thumbnail" width="15" height="15">
-                                        </a>
-                                    {% else %}
-                                        <span id="ga" style="display: none">{{storage}}/{{resultid}}/{{outname}}</span>
-                                        <a href="{{storage}}/{{resultid}}/{{outname}}">
                                             <img src="{% static 'img/download.png' %}" alt="" class="img-thumbnail" width="15" height="15">
                                         </a>
                                     {% endif %}
                                 </td>
                             </tr>
-                        {% endif %}
-                        {% if ".tar" in output %}
-                        <tr>
-                            <td id="tar">{{output}}</td>
-                            <td>&nbsp;</td>
-                            <td><button class="button" name="rerun" onclick="import_history()">Import History</button></td>
-                        </tr>
                         {% endif %}
                     {% endfor %}
                 {% else %}
@@ -174,52 +185,13 @@
             </table>
         </p>
     </div>
-    <h3>Output</h3>
-    <p>
-    <table class="tblresult" id="output-files" style="width: 100%">
-        <th>Filename</th>
-        <th style="width: 10%;">
-            View <img src="{% static 'img/view.png' %}" alt="" class="img-thumbnail" width="15" height="15">
-            <br />
-            or
-            <br />
-            Download <img src="{% static 'img/download.png' %}" alt="" class="img-thumbnail" width="15" height="15">
-            <br />
-        </th>
-        {% if outputs  %}
-            {% for outid, outname in outputs.items %}
-                {% if ".ga" not in outname %}
-                    <tr>
-                        <td>
-                            {{outname}} 
-                        </td>
-                        <td style="text-align:center;">
-                            {% if storagetype == "SEEK" %}
-                                <a href="{{storage}}/data_files/{{outid}}" target="_blank">
-                                    <img src="{% static 'img/view.png' %}" alt="" class="img-thumbnail" width="15" height="15">
-                                </a>
-                                <a href="{{storage}}/data_files/{{outid}}/download" target="_blank">
-                                    <img src="{% static 'img/download.png' %}" alt="" class="img-thumbnail" width="15" height="15">
-                                </a>
-                            {% else %}
-                                <a href="{{storage}}/{{resultid}}/{{outname}}">
-                                    <img src="{% static 'img/download.png' %}" alt="" class="img-thumbnail" width="15" height="15">
-                                </a>
-                            {% endif %}
-                        </td>
-                    </tr>
-                {% endif %}
-            {% endfor %}
-        {% else %}
-            <tr><td>No output files.</td></tr>
-        {% endif %}
-    </table>
     </p>
-    <button id="rerunbutton" class="button" name="rerun" onclick="rerun_analysis()">
-        <img src="{% static 'img/rerun.png' %}" alt="" class="img-thumbnail" width="40" height="40">Rerun
-    </button>
-    <br>
-    <br>
+    <div id="rerun" name="rerun" style="width: 100%; text-align: center;">
+        <button id="rerunbutton" class="button" name="rerun" onclick="rerun_analysis()">
+            <img src="{% static 'img/rerun.png' %}" alt="" class="img-thumbnail" width="40" height="40">
+        </button>
+        <br><br><br><br>
+    </div>
 </div>
 <br />
 <div id="resultsbutton">
