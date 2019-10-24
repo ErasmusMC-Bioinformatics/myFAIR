@@ -33,6 +33,7 @@ $(document).ready(function () {
     $("#samples").addClass('hidden');
     $("#search-panel").removeClass('hidden');
     $("#search-result-panel").removeClass('hidden');
+    $("#process").removeClass('hidden');
     $("#results").addClass('hidden');
     $("#errorPanel").addClass('hidden');
     $("#infoPanel").addClass('hidden');
@@ -258,6 +259,9 @@ function sparqlQuery() {
  * @param {Object} result SPARQL query results
  */
 function fillTable(result) {
+    $("#search-panel").addClass('hidden');
+    $("#search-result-panel").addClass('hidden');
+    $("#process").addClass('hidden');
     $("#infoPanel").addClass('hidden');
     $("#noResultPanel").addClass('hidden');
     $('#process').buttonLoader('stop');
@@ -403,13 +407,14 @@ function fillTable(result) {
             '</select>' +
             '&nbsp' +
             '<input type="text" id="historyname" name="historyname" ' +
-            'style="width:25%;" placeholder="Enter new history name (optional)"/>' +
+            'style="max-width:79%;" placeholder="Enter new history name (optional)"/>' +
             '&nbsp <br>' +
-            '<button id="index_buttons" onclick="postdata(\'group\')">' +
-            '<span class="glyphicon glyphicon-forward" aria-hidden="true">' +
-            '</span> send to galaxy ' +
-            '<span class="glyphicon glyphicon-backward" aria-hidden="true">' +
-            '</span></button>'
+            '&nbsp <br>' +
+            '<button id="index_buttons" style="width: 25%;" onclick="refresh()">' +
+            '<span class="glyphicon glyphicon-backward" aria-hidden="true"></span> Search again</button>' +
+            '&nbsp' +
+            '<button id="index_buttons" style="width: 75%;" onclick="postdata(\'group\')">' +
+            'Send to Galaxy</button>'
         );
     }
 
