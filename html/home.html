@@ -12,6 +12,9 @@ function getStudies(){
     document.getElementById('studyload').style.display = "block";
     document.studies.submit();
 }
+function refresh() {
+    window.location.href = "";
+}
 </script>
 {% endblock %}
 {% block content %}
@@ -149,6 +152,10 @@ function getStudies(){
                         </p>
                     </div>
                     <div id="show_results" style="display: none;">
+                            <button id="index_buttons" onclick="refresh()">
+                                    <span class="glyphicon glyphicon-backward" aria-hidden="true"></span>
+                                    Search again
+                            </button>
                         <button id="index_buttons" onclick="getoutput()">Show results</button>
                     </div>
                 </div>
