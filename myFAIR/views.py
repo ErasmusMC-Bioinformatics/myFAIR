@@ -1354,6 +1354,8 @@ def upload(request):
     test = request.POST.get('samplesb')
     new_hist = request.POST.get('historyname')
     param = request.POST.get('param')
+    omicsdi_disgenet = request.POST.get('omicsdi_disgenet')
+    omicsdi_edam = request.POST.get('omicsdi_edam')
     group = request.POST.get('group')
     investigation = request.POST.get('investigation')
     date = format(datetime.now() + timedelta(hours=2))
@@ -1398,6 +1400,10 @@ def upload(request):
             json_study = json.loads(study_info)
             groups = [json_study["data"]["attributes"]["title"]]
             tags = [param]
+            if omicsdi_disgenet != "" and omicsdi_disgenet is not None:
+                tags.append(omicsdi_disgenet)
+            if omicsdi_edam != "" and omicsdi_edam is not None:
+                tags.append(omicsdi_edam)
             columns = [3]
     else:
         columns = [1,3]
@@ -1648,17 +1654,18 @@ def show_results(request):
                         tags = json.loads(seek_workflow)['data']['attributes']['tags']
                         if tags:
                             for tag in tags:
-                                omicsdi_tag = subprocess.Popen(
-                                    [
-                                        "curl https://www.omicsdi.org:443/ws/dataset/search?query=" + tag
-                                    ], stdout=subprocess.PIPE, shell=True
-                                ).communicate()[0].decode()
-                                link = (
-                                    "https://www.omicsdi.org/dataset/" +
-                                    json.loads(omicsdi_tag)['datasets'][0]["source"] +
-                                    "/" + json.loads(omicsdi_tag)['datasets'][0]["id"]
-                                )
-                                taglinks.append(link)
+                                if "http" not in tag:
+                                    omicsdi_tag = subprocess.Popen(
+                                        [
+                                            "curl https://www.omicsdi.org:443/ws/dataset/search?query=" + tag
+                                        ], stdout=subprocess.PIPE, shell=True
+                                    ).communicate()[0].decode()
+                                    link = (
+                                        "https://www.omicsdi.org/dataset/" +
+                                        json.loads(omicsdi_tag)['datasets'][0]["source"] +
+                                        "/" + json.loads(omicsdi_tag)['datasets'][0]["id"]
+                                    )
+                                    taglinks.append(link)
                         call(
                             [
                                 "wget -O " + username + "/workflow.ga " +

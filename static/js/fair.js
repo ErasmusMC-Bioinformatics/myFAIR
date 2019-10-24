@@ -386,8 +386,11 @@ function fillTable(result) {
         document.getElementById('show_results').style.display = "none";
         $('#galaxy').html(
             '<input type="text" id="param" name="param" ' +
-            'style="width:99%;display:none;" placeholder="Enter Omics DI accession number (optional)"/>' +
-            '&nbsp<br>' +
+            'style="width:99%;display:none;" placeholder="Enter Omics DI accession number (required)"/>' +
+            '<input type="text" id="omicsdi-disgenet" name="omicsdi-disgenet" ' +
+            'style="width:99%;display:none;" placeholder="Enter DisGeNET link i.e. http://identifiers.org/doid/DOID:1793 (optional)"/>' +
+            '<input type="text" id="omicsdi-edam" name="omicsdi-edam" ' +
+            'style="width:99%;display:none;" placeholder="Enter EDAM link i.e. http://edamontology.org/topic_0091 (optional)"/>' +
             '<select name="filetype" id="filetype" class="select-option">' +
             '<optgroup label="File Type:" style="color: #21317F;">' +
             '<option value="auto">auto</option>' +
@@ -407,7 +410,7 @@ function fillTable(result) {
             '</select>' +
             '&nbsp' +
             '<input type="text" id="historyname" name="historyname" ' +
-            'style="max-width:79%;" placeholder="Enter new history name (optional)"/>' +
+            'style="max-width:78.5%;" placeholder="Enter new history name (optional)"/>' +
             '&nbsp <br>' +
             '&nbsp <br>' +
             '<button id="index_buttons" style="width: 25%;" onclick="refresh()">' +
@@ -459,6 +462,8 @@ function fillTable(result) {
         $("#noResultPanel").removeClass('hidden');
         $("#results_table").addClass('hidden');
         document.getElementById('param').style.display = "block";
+        document.getElementById('omicsdi-disgenet').style.display = "block";
+        document.getElementById('omicsdi-edam').style.display = "block";
     }
 }
 
@@ -509,6 +514,8 @@ function postdata(groupname) {
     var dbkey = document.getElementById('dbkey').value;
     var historyname = document.getElementById('historyname').value;
     var param = document.getElementById('param').value;
+    var omicsdi_disgenet = document.getElementById('omicsdi-disgenet').value;
+    var omicsdi_edam = document.getElementById('omicsdi-edam').value;
     $.ajax({
         type: 'POST',
         url: "upload/",
@@ -517,7 +524,8 @@ function postdata(groupname) {
             'filetype': filetype, 'dbkey': dbkey, 'selected': jsonSelected,
             'samples': jsonSamples, 'samplesb': jsonSamplesb,
             'historyname': historyname, 'group': jsonGroup, 'param': param,
-            'investigation': jsonInvestigation, 'searched_assay': searched_assay
+            'investigation': jsonInvestigation, 'searched_assay': searched_assay,
+            'omicsdi_disgenet': omicsdi_disgenet, 'omicsdi_edam': omicsdi_edam
         },
         success: function (data) {
             if (dat.length <= 0) {
