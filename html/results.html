@@ -41,6 +41,12 @@
 <br />
 <div id="wrapper" style="display:none;">
     <hr class="result">
+    <div id="rerun" name="rerun" style="width: 100%; text-align: center;">
+        <button id="rerunbutton" class="button" name="rerun" onclick="rerun_analysis()">
+            <img src="{% static 'img/rerun.png' %}" alt="" class="img-thumbnail" width="40" height="40">
+        </button>
+    </div>
+    <br><br><br><br>
     <div class="resultDiv" id="input" style="overflow-x:auto;">
         <h3>Input Files</h3>
         <p>
@@ -150,7 +156,7 @@
                                 <td>
                                     {% if storagetype == "SEEK" %}
                                         <span id="ga" style="display: none">{{storage}}/data_files/{{outid}}</span>
-                                        <a href="{{storage}}/data_files/{{outid}}" target="_blank">
+                                        <a href="{{storage}}/data_files/{{outid}}/download" target="_blank">
                                             <img src="{% static 'img/download.png' %}" alt="" class="img-thumbnail" width="15" height="15">
                                         </a>
                                     {% endif %}
@@ -186,12 +192,6 @@
         </p>
     </div>
     </p>
-    <div id="rerun" name="rerun" style="width: 100%; text-align: center;">
-        <button id="rerunbutton" class="button" name="rerun" onclick="rerun_analysis()">
-            <img src="{% static 'img/rerun.png' %}" alt="" class="img-thumbnail" width="40" height="40">
-        </button>
-        <br><br><br><br>
-    </div>
 </div>
 <br />
 <div id="resultsbutton">
