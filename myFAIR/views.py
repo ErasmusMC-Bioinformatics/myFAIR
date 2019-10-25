@@ -1355,7 +1355,7 @@ def upload(request):
     new_hist = request.POST.get('historyname')
     param = request.POST.get('param')
     omicsdi_disgenet = request.POST.get('omicsdi_disgenet')
-    omicsdi_edam = request.POST.get('omicsdi_edam')
+    omicsdi_ols = request.POST.get('omicsdi_ols')
     group = request.POST.get('group')
     investigation = request.POST.get('investigation')
     date = format(datetime.now() + timedelta(hours=2))
@@ -1402,8 +1402,8 @@ def upload(request):
             tags = [param]
             if omicsdi_disgenet != "" and omicsdi_disgenet is not None:
                 tags.append(omicsdi_disgenet)
-            if omicsdi_edam != "" and omicsdi_edam is not None:
-                tags.append(omicsdi_edam)
+            if omicsdi_ols != "" and omicsdi_ols is not None:
+                tags.append(omicsdi_ols)
             columns = [3]
     else:
         columns = [1,3]
@@ -2070,7 +2070,7 @@ def disgenet(disgenet):
         "SELECT * " +
         "WHERE { SERVICE <http://rdf.disgenet.org/sparql/> { " +
         "?uri dcterms:title ?disease . " +
-        "?disease bif:contains \'\"" + disgenet + "\"\' ." +
+        "FILTER(contains(?disease, \"" + disgenet + "\"))" +
         "} " +
         "} LIMIT 30"
     )

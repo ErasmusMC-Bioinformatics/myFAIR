@@ -369,7 +369,6 @@ function fillTable(result) {
         });
     };
 
-
     if(STORAGETYPE === "SEEK"){
         var hasCol = hasColumn("#results_table thead", "result_assay");
     } else {
@@ -385,34 +384,84 @@ function fillTable(result) {
         document.getElementById('workflow_select').style.display = "block";
         document.getElementById('show_results').style.display = "none";
         $('#galaxy').html(
-            '<input type="text" id="param" name="param" ' +
-            'style="width:99%;display:none;" placeholder="Enter Omics DI accession number (required)"/>' +
-            '<input type="text" id="omicsdi-disgenet" name="omicsdi-disgenet" ' +
-            'style="width:99%;display:none;" placeholder="Enter DisGeNET link i.e. http://identifiers.org/doid/DOID:1793 (optional)"/>' +
-            '<input type="text" id="omicsdi-edam" name="omicsdi-edam" ' +
-            'style="width:99%;display:none;" placeholder="Enter EDAM link i.e. http://edamontology.org/topic_0091 (optional)"/>' +
-            '<select name="filetype" id="filetype" class="select-option">' +
-            '<optgroup label="File Type:" style="color: #21317F;">' +
-            '<option value="auto">auto</option>' +
-            '<option value="vcf">vcf</option>' +
-            '<option value="tabular">tabular</option>' +
-            '<option value="fasta">fasta</option>' +
-            '<option value="fastq">fastq</option>' +
-            '</optgroup>' +
-            '</select>' +
-            '&nbsp' +
-            '<select name="dbkey" id="dbkey" class="select-option">' +
-            '<optgroup label="Database" style="color: #21317F;">' +
-            '<option value="hg19">HG19</option>' +
-            '<option value="hg18">HG18</option>' +
-            '<option value="?">?</option>' +
-            '</optgroup>' +
-            '</select>' +
-            '&nbsp' +
-            '<input type="text" id="historyname" name="historyname" ' +
-            'style="max-width:78.5%;" placeholder="Enter new history name (optional)"/>' +
-            '&nbsp <br>' +
-            '&nbsp <br>' +
+            '<div id="omicsdiArea">' +
+                '<span><b><i>Omics DI entry:</i></b></span>' +
+                '<input type="text" id="param" name="param" ' +
+                'style="width:99%;display:none;" placeholder="Enter Omics DI accession number (required)"/>' +
+                '<br>' +
+                '<br>' +
+            '</div>' +
+            '<div id="checkArea">' +
+                '<b><i>Select which tags to add</i></b>' +
+                '<br>' +
+                '<input type="checkbox" id="discheck" name="discheck" onchange="checkTagging()"/>' +
+                '<label for="discheck">&nbsp;DisGeNET</label>' +
+                '&emsp;&emsp;' +
+                '<input type="checkbox" id="olscheck" name="olscheck" onchange="checkTagging()"/>' +
+                '<label for="olscheck">&nbsp;OLS</label>' +
+                '<br>' +
+            '</div>' +
+            '<div id="disgenetArea" style="display:none;">' +
+                '<hr>' +
+                '<span><b><i>DisGeNET entry:</i></b></span>' +
+                '<input type="text" id="omicsdi-disgenet" name="omicsdi-disgenet" ' +
+                'style="width:99%;display:none;" placeholder="Enter DisGeNET entry i.e. (optional)"/>' +
+                '<div id="disgenetResults" style="display:none;">' +
+                    '<b><i>Please select a DisGeNET tag from the dropdown menu.</i></b>' +
+                    '<select id="disgenetList" name="disgenetList" style="width:100.3%;">' +
+                    '</select>' +
+                '</div>' +
+                '<br>' +
+                '<div id="loadingDisgenet" style="text-align:center;display:none;float: none;">' +
+                    '<img id="loadingimg" src="../static/img/wait.gif" width="10%" height="10%">' +
+                '</div>' +
+                '<button id="index_buttons" style="width:100.5%;" onclick="searchDisgenet()">' +
+                    'Search DisGeNET' +
+                '</button>' +
+                '<br>' +
+                '<br>' +
+            '</div>' +
+            '<div id="olsArea" style="display:none;">' +
+                '<hr>' +
+                '<span><b><i>OLS entry:</i></b></span>' +
+                '<input type="text" id="omicsdi-ols" name="omicsdi-ols" ' +
+                'style="width:99%;display:none;" placeholder="Enter OLS search term i.e. bioinformatics (optional)"/>' +
+                '<div id="olsResults" style="display:none;">' +
+                    '<b><i>Please select an OLS tag from the dropdown menu.</i></b>' +
+                    '<select id="olsList" name="olsList" style="width:100.3%;">' +
+                    '</select>' +
+                '</div>' +
+                '<br>' +
+                '<div id="loadingOLS" style="text-align:center;display:none;float: none;">' +
+                    '<img id="loadingimg" src="../static/img/wait.gif" width="10%" height="10%">' +
+                '</div>' +
+                '<button id="index_buttons" style="width:100.5%;" onclick="searchOLS()">Search OLS</button>' +
+                '<br>' +
+                '<br>' +
+                '<hr>' +
+            '</div>' +
+            '<div id="galaxyArea" style="display:block;">' +
+                '<select name="filetype" id="filetype" class="select-option">' +
+                    '<optgroup label="File Type:" style="color: #21317F;">' +
+                        '<option value="auto">auto</option>' +
+                        '<option value="vcf">vcf</option>' +
+                        '<option value="tabular">tabular</option>' +
+                        '<option value="fasta">fasta</option>' +
+                        '<option value="fastq">fastq</option>' +
+                    '</optgroup>' +
+                '</select>' +
+                '&nbsp' +
+                '<select name="dbkey" id="dbkey" class="select-option">' +
+                    '<optgroup label="Database" style="color: #21317F;">' +
+                        '<option value="hg19">HG19</option>' +
+                        '<option value="hg18">HG18</option>' +
+                        '<option value="?">?</option>' +
+                    '</optgroup>' +
+                '</select>' +
+                '&nbsp' +
+                '<input type="text" id="historyname" name="historyname" ' +
+                'style="max-width:77.5%;" placeholder="Enter new history name (optional)"/>' +
+            '</div>' +
             '<button id="index_buttons" style="width: 25%;" onclick="refresh()">' +
             '<span class="glyphicon glyphicon-backward" aria-hidden="true"></span> Search again</button>' +
             '&nbsp' +
@@ -463,8 +512,109 @@ function fillTable(result) {
         $("#results_table").addClass('hidden');
         document.getElementById('param').style.display = "block";
         document.getElementById('omicsdi-disgenet').style.display = "block";
-        document.getElementById('omicsdi-edam').style.display = "block";
+        document.getElementById('omicsdi-ols').style.display = "block";
     }
+}
+
+
+/**
+ * Check if the DisGeNET and/or OLS checkboxes are checked.
+ * When the checkbox is checked the specified area will be displayed.
+ */
+function checkTagging() {
+    var x = document.getElementById('discheck').checked;
+    var y = document.getElementById('olscheck').checked;
+    if(x) {
+        document.getElementById('disgenetArea').style.display = "block";
+    } else {
+        document.getElementById('disgenetArea').style.display = "none";
+    }
+    if(y) {
+        document.getElementById('olsArea').style.display = "block";
+    } else {
+        document.getElementById('olsArea').style.display = "none";
+    }
+}
+
+
+/**
+ * Search query to get DisGeNET results to add as a tag 
+ * to the Omics DI results.
+ */
+function searchDisgenet() {
+    document.getElementById('loadingDisgenet').style.display = "block";
+    disgenet_term = document.getElementById('omicsdi-disgenet').value;
+    var query = 
+    "PREFIX dcterms: <http://purl.org/dc/terms/>" +
+    "SELECT * " +
+    "WHERE { SERVICE <http://rdf.disgenet.org/sparql/> { " +
+    "?uri dcterms:title ?disease . " +
+    "FILTER(contains(?disease, \"" + disgenet_term + "\"))" +
+    "} " +
+    "} LIMIT 10";
+    var service = encodeURI(SPARQL_ENDPOINT + query + '&format=json').
+        replace(/#/g, '%23').replace('+', '%2B');
+    $.ajax({
+        url: service, dataType: 'jsonp', success: function (result) {
+            document.getElementById('omicsdi-disgenet').value = '';
+            var disgetnetList = document.getElementById('disgenetList');
+            document.getElementById('disgenetResults').style.display = "block";
+            document.getElementById('loadingDisgenet').style.display = "none";
+            $(disgetnetList).empty();
+            $(disgetnetList).val('');
+            result.results.bindings.forEach(function (v) {
+                var option = document.createElement('option');
+                option.setAttribute('width', '70%');
+                option.text = v.disease.value;
+                option.value = v.uri.value;
+                option.setAttribute('data-input-value', v.uri.value);
+                if (disgetnetList !== null) {
+                    disgetnetList.appendChild(option);
+                }
+            });
+        },
+        error: function (xhr) {
+            alert("An error occured: " + xhr.status + " " +
+                xhr.statusText);
+        }
+    });
+}
+
+
+/**
+ * 
+ */
+function searchOLS() {
+    document.getElementById('loadingOLS').style.display = "block";
+    ols_term = document.getElementById('omicsdi-ols').value;
+    var query = "https://www.ebi.ac.uk/ols/api/search?q=" + ols_term;
+    var service = encodeURI(query + '&format=json').
+        replace(/#/g, '%23').replace('+', '%2B');
+    $.ajax({
+        url: service, success: function (result) {
+            var olsList = document.getElementById('olsList');
+            olsList.style.display = "block";
+            document.getElementById('omicsdi-ols').value = '';
+            document.getElementById('olsResults').style.display = "block";
+            document.getElementById('loadingOLS').style.display = "none";
+            $(olsList).empty();
+            $(olsList).val('');
+            result.response.docs.forEach(function (v) {
+                var option = document.createElement('option');
+                option.setAttribute('width', '70%');
+                option.text = v.label + " (" + v.ontology_name + ") ";
+                option.value = v.iri;
+                // option.setAttribute('data-input-value', v.uri.value);
+                if (olsList !== null) {
+                    olsList.appendChild(option);
+                }
+            });
+        },
+        error: function (xhr) {
+            alert("An error occured: " + xhr.status + " " +
+                xhr.statusText);
+        }
+    });
 }
 
 
@@ -514,8 +664,18 @@ function postdata(groupname) {
     var dbkey = document.getElementById('dbkey').value;
     var historyname = document.getElementById('historyname').value;
     var param = document.getElementById('param').value;
-    var omicsdi_disgenet = document.getElementById('omicsdi-disgenet').value;
-    var omicsdi_edam = document.getElementById('omicsdi-edam').value;
+    var eDisgenet = document.getElementById("disgenetList");
+    var eOLS = document.getElementById("olsList");
+    try {
+        var omicsdi_disgenet = eDisgenet.options[eDisgenet.selectedIndex].value;
+    } catch (error) {
+        var omicsdi_disgenet = "";
+    }
+    try {
+        var omicsdi_ols = eOLS.options[eOLS.selectedIndex].value;
+    } catch (error) {
+        var omicsdi_ols = "";
+    }
     $.ajax({
         type: 'POST',
         url: "upload/",
@@ -525,20 +685,20 @@ function postdata(groupname) {
             'samples': jsonSamples, 'samplesb': jsonSamplesb,
             'historyname': historyname, 'group': jsonGroup, 'param': param,
             'investigation': jsonInvestigation, 'searched_assay': searched_assay,
-            'omicsdi_disgenet': omicsdi_disgenet, 'omicsdi_edam': omicsdi_edam
+            'omicsdi_disgenet': omicsdi_disgenet, 'omicsdi_ols': omicsdi_ols
         },
         success: function (data) {
-            if (dat.length <= 0) {
-                document.getElementById('errormessage').innerHTML =
-                    "No file selected, please try again."
-                document.getElementById('error').style.display = "block";
-                document.getElementById('finished').style.display = "none";
-                document.getElementById('loading').style.display = "none";
-            } else {
-                document.getElementById('loading').style.display = "none";
-                document.getElementById('error').style.display = "none";
-                document.getElementById('finished').style.display = "block";
-            }
+            // if (dat.length <= 0) {
+            //     document.getElementById('errormessage').innerHTML =
+            //         "No file selected, please try again."
+            //     document.getElementById('error').style.display = "block";
+            //     document.getElementById('finished').style.display = "none";
+            //     document.getElementById('loading').style.display = "none";
+            // } else {
+            //     document.getElementById('loading').style.display = "none";
+            //     document.getElementById('error').style.display = "none";
+            //     document.getElementById('finished').style.display = "block";
+            // }
             setTimeout(refresh, 5000);
         },
         error: function (data) {
