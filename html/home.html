@@ -135,7 +135,6 @@ function refresh() {
                     <table class="table table-striped" id="results_table">
                     </table>
                     <br />
-                    <div id="galaxy"></div>
                     <br />
                     <div id="loading" style="display:none" align="center">
                         <img id="loadingImage" src="{% static 'img/loading.gif' %}" width="25%" height="25%">
@@ -154,6 +153,7 @@ function refresh() {
                             Oops...wait a few seconds or reload the page to try again.
                         </p>
                     </div>
+                    <div id="galaxy"></div>
                     <div id="show_results" style="display: none;">
                             <button id="index_buttons" onclick="refresh()">
                                     <span class="glyphicon glyphicon-backward" aria-hidden="true"></span>
@@ -203,7 +203,6 @@ function refresh() {
                         </tr>
                         <tr>
                             <td>
-                                <!-- <button id="index_buttons" style="width: 100%;" onclick="document.studies.submit()">Get studies</button> -->
                                 <button id="index_buttons" style="width: 100%;" onclick="getStudies()">Get studies</button>
                             </td>
                         </tr>
