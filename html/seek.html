@@ -392,7 +392,7 @@
             <tr>
                 <td>
                     {% if disgenet or "http" in storeddisgenet %}
-                    <select id="disgenetresult" name="disgenetresult" class="select-folder" onchange="seekCreate()">
+                    <select id="disgenetresult" name="disgenetresult" class="select-folder" style="width: 100%;" onchange="seekCreate()">
                         <optgroup label="available DisGeNET results:">
                             <option value="{{storeddisgenet}}">{{storeddisgenet}}</option>
                             {% for uri, disease in disgenet.items %}
