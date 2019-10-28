@@ -384,14 +384,14 @@ function fillTable(result) {
         document.getElementById('workflow_select').style.display = "block";
         document.getElementById('show_results').style.display = "none";
         $('#galaxy').html(
-            '<div id="omicsdiArea">' +
+            '<div id="omicsdiArea" style="display:none;">' +
                 '<span><b><i>Omics DI entry:</i></b></span>' +
                 '<input type="text" id="param" name="param" ' +
-                'style="width:99%;display:none;" placeholder="Enter Omics DI accession number (required)"/>' +
+                'style="width:99%;" placeholder="Enter Omics DI accession number (required)"/>' +
                 '<br>' +
                 '<br>' +
             '</div>' +
-            '<div id="checkArea">' +
+            '<div id="checkArea" style="display:none;">' +
                 '<b><i>Select which tags to add</i></b>' +
                 '<br>' +
                 '<input type="checkbox" id="discheck" name="discheck" onchange="checkTagging()"/>' +
@@ -511,6 +511,8 @@ function fillTable(result) {
         $("#noResultPanel").removeClass('hidden');
         $("#results_table").addClass('hidden');
         document.getElementById('param').style.display = "block";
+        document.getElementById('omicsdiArea').style.display = "block";
+        document.getElementById('checkArea').style.display = "block";
         document.getElementById('omicsdi-disgenet').style.display = "block";
         document.getElementById('omicsdi-ols').style.display = "block";
     }
