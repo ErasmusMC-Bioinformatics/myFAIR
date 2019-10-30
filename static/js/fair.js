@@ -195,7 +195,6 @@ function sparqlQuery() {
                 "FILTER (!regex(?assay, '__result__', 'i')) . " +
                 "FILTER (!regex(?fileurl, 'samples', 'i')) . " +
                 "}";
-            SEARCH_ASSAY = ASEARCH;
         } 
     }
     if (RSEARCH != '') {
@@ -242,6 +241,13 @@ function sparqlQuery() {
                 document.getElementById('asearch').value = '';
                 document.getElementById('search-result').value = '';
                 console.log(result);
+                try {
+                    result.results.bindings.forEach(function (value) {
+                        SEARCH_ASSAY = value.assay.value;
+                    });
+                } catch (error) {
+                    SEARCH_ASSAY = '';
+                }
                 fillTable(result);
             },
             error: function (xhr) {
