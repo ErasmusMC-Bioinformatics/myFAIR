@@ -217,12 +217,15 @@ def seekupload(username, password, title, file, filename,
         description: The description of the data.
     """
     tagstring = ""
-    if len(tags) > 1:
-        for tag in tags[:-1]:
-            tagstring += "\\\"" + tag + "\\\", "
-        tagstring += "\\\"" + tags[-1] + "\\\""
-    else:
-        tagstring += "\\\"" + tags[0] + "\\\""
+    try:
+        if len(tags) > 1:
+            for tag in tags[:-1]:
+                tagstring += "\\\"" + tag + "\\\", "
+            tagstring += "\\\"" + tags[-1] + "\\\""
+        else:
+            tagstring += "\\\"" + tags[0] + "\\\""
+    except TypeError:
+        tagstring += ""
     data_instance_query = (
         "curl -u " + username + ":" + password +
         " -X POST \"" + settings.SEEK_URL + "/data_files\" "

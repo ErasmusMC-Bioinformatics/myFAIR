@@ -65,21 +65,17 @@ function refresh() {
                     <fieldset>
                         {% if storagetype == "SEEK" %}
                             <b>Investigation</b>
-                        {% endif %}
-                        <input type="text" class="form-control" name="isearch" id="isearch" list="isearchDataList" placeholder="Enter investigation name">
-                        <datalist id="isearchDataList"></datalist>
-                        {% if storagetype == "SEEK" %}
+                            <input type="text" class="form-control" name="isearch" id="isearch" list="isearchDataList" placeholder="Enter investigation name">
+                            <datalist id="isearchDataList"></datalist>
                             <br>
                             <b>Study</b>
-                        {% endif %}
-                        <input style="display: none" type="text" class="form-control" name="ssearch" id="ssearch" list="ssearchDataList" placeholder="Enter study name">
-                        {% if storagetype == "SEEK" %}
+                            <input style="display: none" type="text" class="form-control" name="ssearch" id="ssearch" list="ssearchDataList" placeholder="Enter study name">
+                            <datalist id="ssearchDataList"></datalist>
                             <br>
                             <b>Assay</b>
+                            <input style="display: none" type="text" class="form-control" name="asearch" id="asearch" list="asearchDataList" placeholder="Enter assay name">
+                            <datalist id="asearchDataList"></datalist>
                         {% endif %}
-                        <input style="display: none" type="text" class="form-control" name="asearch" id="asearch" list="asearchDataList" placeholder="Enter assay name">
-                        <datalist id="ssearchDataList"></datalist>
-                        <datalist id="asearchDataList"></datalist>
                     </fieldset>
                 </div>
             </div>

@@ -178,7 +178,7 @@ function sparqlQuery() {
                 "PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> " +
                 "PREFIX dcterms: <http://purl.org/dc/terms/> " +
                 "PREFIX jerm: <http://jermontology.org/ontology/JERMOntology#> " +
-                "SELECT DISTINCT ?fileurl ?filetitle ?investigation ?study ?assay WHERE {" +
+                "SELECT DISTINCT (COALESCE(?fileurl, \"NA\") as ?fileurl) (COALESCE(?filetitle, \"NA\") as ?filetitle) ?investigation ?study ?assay WHERE {" +
                 "?i dcterms:title ?investigation ; " +
                 "rdf:type jerm:Investigation ." +
                 "?i jerm:itemProducedBy ?projectid . " +
@@ -187,8 +187,10 @@ function sparqlQuery() {
                 "?studyid dcterms:title ?study . " +
                 "?studyid jerm:hasPart ?assayid . " +
                 "?assayid dcterms:title ?assay . " +
+                "OPTIONAL {" +
                 "?fileurl jerm:isPartOf ?assayid . " + 
                 "?fileurl dcterms:title ?filetitle ." +
+                "}" +
                 "FILTER regex(?investigation, '" + ISEARCH + "', 'i') . " +
                 "FILTER regex(?study, '" + SSEARCH + "', 'i') . " +
                 "FILTER regex(?assay, '" + ASEARCH + "', 'i') . " +
@@ -239,14 +241,18 @@ function sparqlQuery() {
                 document.getElementById('isearch').value = '';
                 document.getElementById('ssearch').value = '';
                 document.getElementById('asearch').value = '';
-                document.getElementById('search-result').value = '';
-                console.log(result);
-                try {
-                    result.results.bindings.forEach(function (value) {
-                        SEARCH_ASSAY = value.assay.value;
-                    });
-                } catch (error) {
-                    SEARCH_ASSAY = '';
+                document.getElementById('search-result').value = '';                
+                if (ASEARCH != '') {
+                    SEARCH_ASSAY = ASEARCH;
+                } else {
+                    try {
+                        result.results.bindings.forEach(function (value) {
+                            SEARCH_ASSAY = value.assay.value;
+                        });
+                    } catch (error) {
+                        console.log('No value');
+                        SEARCH_ASSAY = '';
+                    }
                 }
                 fillTable(result);
             },
@@ -275,7 +281,7 @@ function fillTable(result) {
     $("#results_table").removeClass('hidden');
     var hasResult = false;
     var table = '<thead><tr>'
-    table += '<th>select file</th>'
+    table += '<th>select file(s)</th>'
     result.head.vars.forEach(function (entry) {
         if (entry.indexOf("URI") === -1) {
             table += '<th><a>' + entry + '</a></th>'
@@ -291,8 +297,17 @@ function fillTable(result) {
             table += '<td><button id="index_buttons" onclick="getoutput()">' +
                 'Show results</button></td>';
         }
-        table += '<td><input type="checkbox" name="select" id="' + rownr +
-            '" value="' + rownr + '"><label for="' + rownr + '"></label></td>';
+        try {
+            if (value.fileurl.value === "NA") {
+                table += '<td>&nbsp;</td>';
+            } else {
+                table += '<td><input type="checkbox" name="select" id="' + rownr +
+                '" value="' + rownr + '"><label for="' + rownr + '"></label></td>';
+            }
+        } catch (error) {
+            table += '<td><input type="checkbox" name="select" id="' + rownr +
+                '" value="' + rownr + '"><label for="' + rownr + '"></label></td>';
+        }
         rownr = rownr + 1;
         result.head.vars.forEach(function (head) {
             if (head.indexOf("URI") === -1 && value[head] !== undefined) {
@@ -390,14 +405,14 @@ function fillTable(result) {
         document.getElementById('workflow_select').style.display = "block";
         document.getElementById('show_results').style.display = "none";
         $('#galaxy').html(
-            '<div id="omicsdiArea" style="display:none;">' +
+            '<div id="omicsdiArea" style="display:block;">' +
                 '<span><b><i>Omics DI entry:</i></b></span>' +
                 '<input type="text" id="param" name="param" ' +
                 'style="width:99%;" placeholder="Enter Omics DI accession number (required)"/>' +
                 '<br>' +
                 '<br>' +
             '</div>' +
-            '<div id="checkArea" style="display:none;">' +
+            '<div id="checkArea" style="display:block;">' +
                 '<b><i>Select which tags to add</i></b>' +
                 '<br>' +
                 '<input type="checkbox" id="discheck" name="discheck" onchange="checkTagging()"/>' +
@@ -411,7 +426,7 @@ function fillTable(result) {
                 '<hr>' +
                 '<span><b><i>DisGeNET entry:</i></b></span>' +
                 '<input type="text" id="omicsdi-disgenet" name="omicsdi-disgenet" ' +
-                'style="width:99%;display:none;" placeholder="Enter DisGeNET entry i.e. (optional)"/>' +
+                'style="width:99%; placeholder="Enter DisGeNET entry i.e. (optional)"/>' +
                 '<div id="disgenetResults" style="display:none;">' +
                     '<b><i>Please select a DisGeNET tag from the dropdown menu.</i></b>' +
                     '<select id="disgenetList" name="disgenetList" style="width:100.3%;">' +
@@ -431,7 +446,7 @@ function fillTable(result) {
                 '<hr>' +
                 '<span><b><i>OLS entry:</i></b></span>' +
                 '<input type="text" id="omicsdi-ols" name="omicsdi-ols" ' +
-                'style="width:99%;display:none;" placeholder="Enter OLS search term i.e. bioinformatics (optional)"/>' +
+                'style="width:99%; placeholder="Enter OLS search term i.e. bioinformatics (optional)"/>' +
                 '<div id="olsResults" style="display:none;">' +
                     '<b><i>Please select an OLS tag from the dropdown menu.</i></b>' +
                     '<select id="olsList" name="olsList" style="width:100.3%;">' +
@@ -516,11 +531,15 @@ function fillTable(result) {
     if (!hasResult) {
         $("#noResultPanel").removeClass('hidden');
         $("#results_table").addClass('hidden');
-        document.getElementById('param').style.display = "block";
-        document.getElementById('omicsdiArea').style.display = "block";
-        document.getElementById('checkArea').style.display = "block";
-        document.getElementById('omicsdi-disgenet').style.display = "block";
-        document.getElementById('omicsdi-ols').style.display = "block";
+    } else {
+        var elementExists = document.getElementsByName("select");
+        if (elementExists.length > 0) {
+            document.getElementById('checkArea').style.display = "none";
+            document.getElementById('omicsdiArea').style.display = "none";
+        } else {
+            document.getElementById('checkArea').style.display = "block";
+            document.getElementById('omicsdiArea').style.display = "block";
+        }
     }
 }
 
@@ -612,7 +631,6 @@ function searchOLS() {
                 option.setAttribute('width', '70%');
                 option.text = v.label + " (" + v.ontology_name + ") ";
                 option.value = v.iri;
-                // option.setAttribute('data-input-value', v.uri.value);
                 if (olsList !== null) {
                     olsList.appendChild(option);
                 }
@@ -660,6 +678,7 @@ function postdata(groupname) {
         // meta.push(getrow(selected[s])[1]);
         group.push(getrow(selected[s])[2]);
         investigation.push(getrow(selected[s])[3]);
+        var searched_assay = getrow(selected[s])[4];
     }
     var jsonSamples = JSON.stringify(samples);
     var jsonSamplesb = JSON.stringify(samplesb);
@@ -696,17 +715,6 @@ function postdata(groupname) {
             'omicsdi_disgenet': omicsdi_disgenet, 'omicsdi_ols': omicsdi_ols
         },
         success: function (data) {
-            // if (dat.length <= 0) {
-            //     document.getElementById('errormessage').innerHTML =
-            //         "No file selected, please try again."
-            //     document.getElementById('error').style.display = "block";
-            //     document.getElementById('finished').style.display = "none";
-            //     document.getElementById('loading').style.display = "none";
-            // } else {
-            //     document.getElementById('loading').style.display = "none";
-            //     document.getElementById('error').style.display = "none";
-            //     document.getElementById('finished').style.display = "block";
-            // }
             setTimeout(refresh, 5000);
         },
         error: function (data) {
@@ -801,6 +809,7 @@ function getrow(row) {
     var str2 = "";
     var str3 = "";
     var str4 = "";
+    var str5 = "";
     var x = document.getElementById(
         'results_table').rows[row].cells.item(1).innerText;
     var y = document.getElementById(
@@ -809,12 +818,14 @@ function getrow(row) {
         'results_table').rows[row].cells.item(4).innerText;
     var i = document.getElementById(
         'results_table').rows[row].cells.item(3).innerText;
+    var a = document.getElementById(
+        'results_table').rows[row].cells.item(5).innerText;
     str = str + x;
     str2 = str2 + y;
     str3 = str3 + z;
     str4 = str4 + i;
-    console.log(str, str2, str3, str4)
-    return [str, str2, str3, str4];
+    str5 = str5 + a;
+    return [str, str2, str3, str4, str5];
 }
 
 
