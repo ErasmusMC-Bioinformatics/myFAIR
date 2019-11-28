@@ -481,9 +481,9 @@ function fillTable(result) {
                 '</select>' +
                 '&nbsp' +
                 '<input type="text" id="historyname" name="historyname" ' +
-                'style="max-width:77.5%;" placeholder="Enter new history name (optional)"/>' +
+                'style="max-width:98%;" placeholder="Enter new history name (optional)"/>' +
             '</div>' +
-            '<button id="index_buttons" style="width: 25%;" onclick="refresh()">' +
+            '<button id="index_buttons" style="width: 24%;" onclick="refresh()">' +
             '<span class="glyphicon glyphicon-backward" aria-hidden="true"></span> Search again</button>' +
             '&nbsp' +
             '<button id="index_buttons" style="width: 75%;" onclick="postdata(\'group\')">' +
